@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Executive Suite | Fedokhotel</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+.exec-tier-page{
+  --et-bg:#F8F5F0;
+  --et-ink:#1A1A1A;
+  --et-ink-soft:rgba(26,26,26,.62);
+  --et-gold:#C9A962;
+  --et-gold-tint:rgba(201,169,98,.12);
+  --et-border:rgba(26,26,26,.1);
+  --et-max:1180px;
+  --et-radius-sm:2px;
+  --et-radius-md:4px;
+  --et-radius-lg:8px;
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  background:var(--et-bg);
+  color:var(--et-ink);
+  font-family:'Inter',Arial,sans-serif;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.exec-tier-page,
+.exec-tier-page *{ box-sizing:border-box; }
+.exec-tier-page img{ max-width:100%; display:block; }
+.exec-tier-page a{ text-decoration:none; }
+.exec-tier-page p,
+.exec-tier-page h1,
+.exec-tier-page h2{ margin:0; }
+.exec-tier-container{
+  max-width:var(--et-max);
+  margin:0 auto;
+  padding:0 clamp(1.25rem,4vw,3rem);
+}
+/* ============ HERO ============ */
+.exec-tier-hero{
+  padding:clamp(4rem,9vw,6.5rem) 0 clamp(3rem,6vw,4rem);
+  text-align:center;
+}
+.exec-tier-eyebrow{
+  display:block;
+  font-family:'Inter',Arial,sans-serif;
+  font-size:.78rem;
+  font-weight:600;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--et-gold);
+  margin-bottom:1.5rem;
+}
+.exec-tier-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:600;
+  font-size:clamp(2.2rem,5.5vw,3.6rem);
+  line-height:1.15;
+  color:var(--et-ink);
+  margin-bottom:1.4rem;
+}
+.exec-tier-price{
+  display:inline-flex;
+  align-items:baseline;
+  gap:.3rem;
+  border:1px solid var(--et-gold);
+  background:var(--et-gold-tint);
+  color:var(--et-ink);
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:600;
+  font-size:1rem;
+  padding:.5rem 1.1rem;
+  border-radius:999px;
+  margin-bottom:1.8rem;
+}
+.exec-tier-price-unit{
+  font-weight:400;
+  font-size:.8rem;
+  color:var(--et-ink-soft);
+}
+.exec-tier-lede{
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:400;
+  font-size:clamp(1rem,1.6vw,1.12rem);
+  line-height:1.75;
+  color:var(--et-ink-soft);
+  max-width:62ch;
+  margin:0 auto;
+}
+/* ============ GALLERY (Slidable Arrangement) ============ */
+.exec-tier-gallery{ padding-bottom:clamp(3.5rem,7vw,5rem); }
+.exec-tier-gallery__slider{
+  display:flex;
+  gap:1.2rem;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  padding-bottom:1.25rem;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:var(--et-gold) var(--et-border);
+}
+.exec-tier-gallery__slider::-webkit-scrollbar{ height:6px; }
+.exec-tier-gallery__slider::-webkit-scrollbar-track{ background:var(--et-border); border-radius:4px; }
+.exec-tier-gallery__slider::-webkit-scrollbar-thumb{ background:var(--et-gold); border-radius:4px; }
+.exec-tier-gallery__item{
+  flex:0 0 clamp(280px, 45vw, 520px);
+  aspect-ratio:16/10;
+  position:relative;
+  overflow:hidden;
+  border-radius:var(--et-radius-lg);
+  box-shadow:0 2px 8px rgba(26,26,26,.06), 0 18px 36px rgba(26,26,26,.1);
+  scroll-snap-align:start;
+}
+.exec-tier-gallery__image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:transform .65s cubic-bezier(.16,1,.3,1);
+}
+.exec-tier-gallery__item:hover .exec-tier-gallery__image{ transform:scale(1.07); }
+/* ============ HIGHLIGHTS & RESERVATION ============ */
+.exec-tier-highlights{ padding-bottom:clamp(4rem,8vw,6rem); }
+.exec-tier-highlights__heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:600;
+  font-size:clamp(1.4rem,2.6vw,1.8rem);
+  color:var(--et-ink);
+  text-align:center;
+  margin-bottom:clamp(1.75rem,3.5vw,2.5rem);
+}
+.exec-tier-highlights__grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1rem;
+}
+.exec-tier-highlights__card{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  background:#FFFFFF;
+  border:1px solid var(--et-border);
+  border-radius:var(--et-radius-md);
+  box-shadow:0 2px 6px rgba(26,26,26,.04);
+  padding:1.05rem 1.25rem;
+}
+.exec-tier-highlights__marker{
+  width:8px;
+  height:8px;
+  background:var(--et-gold);
+  transform:rotate(45deg);
+  flex-shrink:0;
+}
+.exec-tier-highlights__label{
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:500;
+  font-size:.94rem;
+  color:var(--et-ink);
+}
+.exec-tier-cta{
+  text-align:center;
+  margin-top:clamp(2.5rem,5vw,3.25rem);
+}
+.exec-tier-btn{
+  display:inline-block;
+  background:var(--et-gold);
+  color:var(--et-ink);
+  border:1px solid var(--et-gold);
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:600;
+  font-size:.85rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:1.05rem 3.25rem;
+  border-radius:var(--et-radius-sm);
+  transition:background-color .3s ease, border-color .3s ease;
+}
+.exec-tier-btn:hover{ background:#B8955A; border-color:#B8955A; }
+.exec-tier-btn:focus-visible{ outline:2px solid var(--et-ink); outline-offset:3px; }
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .exec-tier-highlights__grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px){
+  .exec-tier-gallery__item{ flex:0 0 85vw; }
+  .exec-tier-highlights__grid{ grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion:reduce){
+  .exec-tier-gallery__image{ transition:none; }
+  .exec-tier-btn{ transition:none; }
+}
+  </style>
+</head>
+<body>
+<div class="exec-tier-page">
+  <div class="exec-tier-container">
+    <section class="exec-tier-hero">
+      <span class="exec-tier-eyebrow">&mdash; Accommodation Tier &mdash;</span>
+      <h1 class="exec-tier-title">The Executive Suite</h1>
+      <div class="exec-tier-price">&#8358;85,000 <span class="exec-tier-price-unit">/ night</span></div>
+      <p class="exec-tier-lede">The pinnacle of luxury and space &mdash; the Executive Suite combines an expansive king-sized sleeping area, a private lounge, a dedicated workspace, and an upscale ensuite bathroom designed for guests who expect absolute distinction.</p>
+    </section>
+
+    <section class="exec-tier-gallery">
+      <div class="exec-tier-gallery__slider">
+        <div class="exec-tier-gallery__item">
+          <img class="exec-tier-gallery__image" src="https://i.postimg.cc/d0mgy97m/grok-1786498676099.jpg" alt="Executive Suite main view" loading="lazy" decoding="async">
+        </div>
+        <div class="exec-tier-gallery__item">
+          <img class="exec-tier-gallery__image" src="https://i.postimg.cc/vTjKsqjg/grok-1786498704395.jpg" alt="Executive Suite gallery photo" loading="lazy" decoding="async">
+        </div>
+        <div class="exec-tier-gallery__item">
+          <img class="exec-tier-gallery__image" src="https://i.postimg.cc/y6rtcxdk/grok-1786498712047.jpg" alt="Executive Suite gallery photo" loading="lazy" decoding="async">
+        </div>
+        <div class="exec-tier-gallery__item">
+          <img class="exec-tier-gallery__image" src="https://i.postimg.cc/xTwZpZM3/grok-1786498732875.jpg" alt="Executive Suite gallery photo" loading="lazy" decoding="async">
+        </div>
+        <div class="exec-tier-gallery__item">
+          <img class="exec-tier-gallery__image" src="https://i.postimg.cc/kgWp0yyW/grok-1786498757192.jpg" alt="Executive Suite gallery photo" loading="lazy" decoding="async">
+        </div>
+      </div>
+    </section>
+
+    <section class="exec-tier-highlights">
+      <h2 class="exec-tier-highlights__heading">Room Highlights</h2>
+      <div class="exec-tier-highlights__grid">
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">King-Sized Bed</span></div>
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">Private Lounge Area</span></div>
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">Dedicated Workspace</span></div>
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">Luxury Ensuite Bathroom</span></div>
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">High-Speed Wi-Fi</span></div>
+        <div class="exec-tier-highlights__card"><span class="exec-tier-highlights__marker"></span><span class="exec-tier-highlights__label">24/7 Room Service</span></div>
+      </div>
+      <div class="exec-tier-cta">
+        <a class="exec-tier-btn" href="/book-now">Reserve Now</a>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
