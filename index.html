@@ -4,146 +4,263 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fedok 144 Suites · Yenagoa, Bayelsa</title>
-<meta name="description" content="Experience refined luxury in the heart of Yenagoa. Fedok 144 Suites, Yenagoa, Bayelsa.">
+<meta name="description" content="Experience refined luxury in the heart of Yenagoa. Fedok 144 Suites.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Jost:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   html { scroll-behavior: smooth; }
-  body { margin: 0; overflow-x: clip; font-family: 'Inter', sans-serif; background: #F8F5F0; }
+  body { margin: 0; overflow-x: clip; background: #faf7f1; }
   @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-</style>
-<!-- See repo SETUP.md. Full styled homepage with hero, spotlight, amenities is in the project; if this deploy is incomplete, replace index.html from the attached original + header block in SETUP. -->
-<style>
-.site-header{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(248,245,240,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(198,166,100,.2)}
-.site-header__inner{max-width:1240px;margin:0 auto;padding:0 24px;height:72px;display:flex;align-items:center;justify-content:space-between}
-.site-header__logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:#262019}
-.site-header__logo img{height:42px;width:auto}
-.site-header__logo-text{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:1.15rem}
-.site-header__nav{display:flex;align-items:center;gap:28px}
-.site-header__nav a{font-family:Inter,sans-serif;font-weight:500;font-size:.82rem;letter-spacing:.1em;text-transform:uppercase;color:#262019;text-decoration:none}
-.site-header__nav a:hover{color:#C6A664}
-.site-header__nav a.nav-cta{background:#C6A664;color:#262019;padding:10px 20px;border-radius:2px}
-.site-header__burger{display:none;background:none;border:none;cursor:pointer;padding:8px;width:44px;height:44px;flex-direction:column;justify-content:center;gap:6px}
-.site-header__burger span{display:block;width:22px;height:1.5px;background:#262019}
-.site-header__mobile{display:none;position:fixed;top:72px;left:0;right:0;background:#F8F5F0;padding:24px;flex-direction:column;gap:16px;z-index:999}
-.site-header__mobile.is-open{display:flex}
-.site-header__mobile a{font-family:Inter,sans-serif;font-weight:500;font-size:.95rem;letter-spacing:.08em;text-transform:uppercase;color:#262019;text-decoration:none;padding:12px 0;border-bottom:1px solid rgba(26,26,26,.08)}
-@media(max-width:768px){.site-header__nav{display:none}.site-header__burger{display:flex}}
-.fedok-hero,.fedok-hero *{box-sizing:border-box}
-.fedok-hero{--fedok-ivory:#F8F5F0;--fedok-white:#FFF;--fedok-charcoal:#262019;--fedok-muted:#55493C;--fedok-gold:#C6A664;position:relative;width:100vw;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:140px 24px;background-color:var(--fedok-ivory);background-image:radial-gradient(ellipse 80% 60% at 50% 35%,#FBFAF7 0%,var(--fedok-ivory) 60%,#F2EDE3 100%);text-align:center}
-.fedok-hero__frame{position:absolute;inset:22px;border:1px solid rgba(198,166,100,.32);pointer-events:none}
-.fedok-hero__inner{position:relative;z-index:1;max-width:760px}
-.fedok-hero__title{margin:0;font-family:'Playfair Display',Georgia,serif;font-weight:500;font-size:clamp(2.75rem,6vw,5.5rem);line-height:1.1;color:var(--fedok-charcoal)}
-.fedok-hero__divider{display:block;margin:26px auto;color:var(--fedok-gold)}
-.fedok-hero__subtitle{margin:0 auto;max-width:460px;font-family:Inter,sans-serif;font-weight:300;font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.7;letter-spacing:.02em;color:var(--fedok-muted)}
-.fedok-hero__buttons{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:20px;margin-top:48px}
-.fedok-btn{display:inline-block;font-family:Inter,sans-serif;font-weight:500;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;padding:18px 40px;border-radius:2px;transition:background-color .35s,border-color .35s,box-shadow .35s,transform .35s}
-.fedok-btn--primary{background-color:var(--fedok-white);color:var(--fedok-charcoal);border:1px solid var(--fedok-gold);box-shadow:0 4px 16px rgba(38,32,25,.07)}
-.fedok-btn--primary:hover{background-color:var(--fedok-gold);border-color:var(--fedok-gold);box-shadow:0 8px 22px rgba(198,166,100,.38);transform:translateY(-1px)}
-.fedok-btn--secondary{background:transparent;color:var(--fedok-charcoal);border:1px solid rgba(38,32,25,.28)}
-.fedok-btn--secondary:hover{background:rgba(198,166,100,.1);border-color:var(--fedok-gold)}
-@media(max-width:560px){.fedok-hero{padding:96px 20px}.fedok-hero__buttons{flex-direction:column;width:100%}.fedok-btn{width:100%;max-width:320px;text-align:center}}
-.fedok-spotlight,.fedok-amenities{--fedok-ivory:#F8F5F0;--fedok-white:#FFF;--fedok-charcoal:#1A1A1A;--fedok-muted:#5C5347;--fedok-gold:#C9A962;--fedok-gold-rgb:201,169,98;--fedok-shadow:0 2px 6px rgba(26,26,26,.05),0 14px 28px rgba(26,26,26,.07),0 30px 60px rgba(26,26,26,.06);position:relative;width:100vw;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%);background-color:var(--fedok-ivory)}
-.fedok-container{max-width:1240px;margin:0 auto;padding:0 24px}
-.fedok-eyebrow{display:block;font-family:Inter,sans-serif;font-weight:500;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--fedok-gold)}
-.fedok-eyebrow--dashed::before{content:'— '}.fedok-eyebrow--dashed::after{content:' —'}
-.fedok-divider{display:flex;align-items:center;justify-content:center;gap:10px;width:130px}
-.fedok-divider::before,.fedok-divider::after{content:'';flex:1;height:1px;background:var(--fedok-gold)}
-.fedok-divider__diamond{width:6px;height:6px;background:var(--fedok-gold);transform:rotate(45deg);flex-shrink:0}
-.fedok-divider--left{justify-content:flex-start;width:64px}.fedok-divider--left::after{display:none}
-.fedok-link{position:relative;display:inline-block;font-family:Inter,sans-serif;font-weight:500;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fedok-charcoal);text-decoration:none;padding-bottom:5px}
-.fedok-link::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--fedok-gold);transform:scaleX(0);transform-origin:left;transition:transform .4s}
-.fedok-link:hover::after{transform:scaleX(1)}
-.fedok-media{position:relative;overflow:hidden;border-radius:6px;box-shadow:var(--fedok-shadow);background:var(--fedok-white)}
-.fedok-media img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s}
-.fedok-media:hover img{transform:scale(1.03)}
-.fedok-spotlight{padding:110px 0}
-.fedok-spotlight__grid{display:grid;grid-template-columns:1.1fr 1fr;gap:72px;align-items:center}
-.fedok-spotlight__media{aspect-ratio:4/5}
-.fedok-spotlight__content{display:flex;flex-direction:column;align-items:flex-start;text-align:left}
-.fedok-spotlight__heading{margin:0;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(2rem,3.1vw,2.9rem);line-height:1.22;color:var(--fedok-charcoal)}
-.fedok-spotlight__text{margin:0 0 32px;max-width:440px;font-family:Inter,sans-serif;font-weight:300;font-size:1.05rem;line-height:1.85;color:var(--fedok-muted)}
-.fedok-collage{display:flex;gap:20px;width:100%;max-width:420px;margin-top:44px}
-.fedok-collage__item{flex:1;aspect-ratio:1}
-.fedok-collage__item--offset{margin-top:30px}
-.fedok-amenities{padding:100px 0 130px}
-.fedok-amenities__header{text-align:center;max-width:620px;margin:0 auto 60px;display:flex;flex-direction:column;align-items:center}
-.fedok-amenities__heading{margin:0;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(2rem,3.1vw,2.9rem);color:var(--fedok-charcoal)}
-.fedok-amenities__lede{margin:20px 0 0;font-family:Inter,sans-serif;font-weight:300;font-size:1.02rem;line-height:1.8;color:var(--fedok-muted)}
-.fedok-amenities__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
-.fedok-amenity-card{background:var(--fedok-white);border-radius:12px;box-shadow:var(--fedok-shadow);border:1px solid transparent;padding:40px 22px 34px;text-align:center;transition:transform .4s,box-shadow .4s,border-color .4s}
-.fedok-amenity-card:hover{transform:translateY(-8px);border-color:rgba(var(--fedok-gold-rgb),.55)}
-.fedok-amenity-card--photo{padding:0;overflow:hidden}
-.fedok-amenity-card--photo .fedok-amenity-card__visual{aspect-ratio:16/11;border-radius:0;box-shadow:none}
-.fedok-amenity-card--photo .fedok-amenity-card__body{padding:26px 22px 30px}
-.fedok-amenity-card__icon{width:58px;height:58px;margin:0 auto 22px;border-radius:50%;background:rgba(var(--fedok-gold-rgb),.09);display:flex;align-items:center;justify-content:center;color:var(--fedok-gold)}
-.fedok-amenity-card__icon svg{width:26px;height:26px}
-.fedok-amenity-card__title{margin:0 0 10px;font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:1.2rem;color:var(--fedok-charcoal)}
-.fedok-amenity-card__desc{margin:0;font-family:Inter,sans-serif;font-weight:300;font-size:.92rem;line-height:1.65;color:var(--fedok-muted)}
-@media(max-width:900px){.fedok-spotlight__grid{grid-template-columns:1fr;gap:44px}.fedok-spotlight__media{aspect-ratio:16/10}.fedok-spotlight__content{align-items:center;text-align:center}.fedok-amenities__grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.fedok-amenities__grid{grid-template-columns:1fr}}
-.fedok-suites{background:#F8F5F0;padding:100px 0 120px;width:100vw;margin-left:calc(-50vw + 50%);margin-right:calc(-50vw + 50%)}
-.fedok-suites__header{text-align:center;max-width:620px;margin:0 auto 56px}
-.fedok-suites__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px;max-width:1240px;margin:0 auto;padding:0 24px}
-.fedok-suite-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 6px rgba(26,26,26,.05),0 14px 28px rgba(26,26,26,.07);transition:transform .4s}
-.fedok-suite-card:hover{transform:translateY(-6px)}
-.fedok-suite-card__media{aspect-ratio:4/3;overflow:hidden}
-.fedok-suite-card__media img{width:100%;height:100%;object-fit:cover}
-.fedok-suite-card__body{padding:28px 24px 32px}
-.fedok-suite-card__name{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:1.35rem;margin:0 0 8px}
-.fedok-suite-card__price{font-family:Inter,sans-serif;font-weight:500;font-size:.95rem;color:#C9A962;margin-bottom:12px}
-.fedok-suite-card__desc{font-family:Inter,sans-serif;font-weight:300;font-size:.92rem;color:#5C5347;line-height:1.65;margin:0 0 20px}
-.fedok-suite-card__link{font-family:Inter,sans-serif;font-weight:500;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:#1A1A1A;text-decoration:none;border-bottom:1px solid #C9A962;padding-bottom:3px}
-@media(max-width:900px){.fedok-suites__grid{grid-template-columns:1fr;max-width:420px}}
-.site-footer{background:#262019;color:#F8F5F0;padding:64px 24px 32px}
-.site-footer__inner{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px}
-.site-footer__brand{font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;margin-bottom:12px}
-.site-footer__tag{font-family:Inter,sans-serif;font-weight:300;font-size:.95rem;line-height:1.7;color:rgba(248,245,240,.7);max-width:280px}
-.site-footer__col h4{font-family:Inter,sans-serif;font-weight:500;font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:#C6A664;margin:0 0 16px}
-.site-footer__col a,.site-footer__col p{display:block;font-family:Inter,sans-serif;font-weight:300;font-size:.92rem;color:rgba(248,245,240,.8);text-decoration:none;margin:0 0 10px;line-height:1.5}
-.site-footer__col a:hover{color:#C6A664}
-.site-footer__bottom{max-width:1240px;margin:40px auto 0;padding-top:24px;border-top:1px solid rgba(248,245,240,.12);font-family:Inter,sans-serif;font-size:.8rem;color:rgba(248,245,240,.5);text-align:center}
-@media(max-width:768px){.site-footer__inner{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-<header class="site-header">
-  <div class="site-header__inner">
-    <a href="/" class="site-header__logo">
-      <img src="https://fedokhotel.s6-tastewp.com/wp-content/uploads/2026/08/1000561817-removebg-preview.png" alt="Fedok 144 logo" width="42" height="42" onerror="this.style.display='none'">
-      <span class="site-header__logo-text">Fedok 144</span>
-    </a>
-    <nav class="site-header__nav" aria-label="Main">
-      <a href="#suites">Suites</a>
-      <a href="#amenities">Amenities</a>
-      <a href="/guest-portal.html">Guest Portal</a>
-      <a href="/book.html" class="nav-cta">Book Now</a>
-    </nav>
-    <button class="site-header__burger" type="button" aria-label="Open menu" aria-expanded="false" id="menu-toggle"><span></span><span></span><span></span></button>
-  </div>
-  <nav class="site-header__mobile" id="mobile-menu" aria-label="Mobile">
-    <a href="#suites">Suites</a>
-    <a href="#amenities">Amenities</a>
-    <a href="/guest-portal.html">Guest Portal</a>
-    <a href="/book.html">Book Now</a>
-  </nav>
-</header>
 
-<section class="fedok-hero" aria-label="Fedok 144 Suites — introduction">
-  <div class="fedok-hero__frame" aria-hidden="true"></div>
-  <div class="fedok-hero__inner">
-    <h1 class="fedok-hero__title">Fedok 144 Suites</h1>
-    <svg class="fedok-hero__divider" width="96" height="20" viewBox="0 0 96 20" fill="none" aria-hidden="true"><path d="M2 10C20 1 30 1 48 10C66 19 78 19 94 10" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"/></svg>
-    <p class="fedok-hero__subtitle">Experience refined luxury in the heart of Yenagoa</p>
-    <div class="fedok-hero__buttons">
-      <a href="book.html" class="fedok-btn fedok-btn--primary">Book Your Stay</a>
-      <a href="#suites" class="fedok-btn fedok-btn--secondary">Explore Suites</a>
+<!-- HEADER (your fedok144-header) -->
+<style>
+  .fedok144-header,.fedok144-header *,.fedok144-header-overlay,.fedok144-header-overlay *{box-sizing:border-box}
+  .fedok144-header{--fh-bg:#faf7f1;--fh-gold:#c9a962;--fh-gold-deep:#8c6b2f;--fh-dark:#1a1a1a;position:sticky;top:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;background:var(--fh-bg);border-bottom:1px solid var(--fh-gold);padding:clamp(14px,2vw,20px) clamp(20px,5vw,56px);font-family:Jost,Arial,sans-serif}
+  .fedok144-header-logo{display:inline-flex;align-items:center;line-height:0}
+  .fedok144-header-logo img{display:block;height:clamp(32px,4.2vw,50px);width:auto}
+  .fedok144-header-toggle{position:relative;z-index:1200;width:28px;height:20px;background:none;border:none;padding:0;cursor:pointer}
+  .fedok144-header-toggle-line{position:absolute;left:0;width:100%;height:1.5px;background:var(--fh-dark);border-radius:1px;transition:transform .5s cubic-bezier(.65,0,.35,1),top .5s cubic-bezier(.65,0,.35,1),opacity .3s ease,background-color .3s ease}
+  .fedok144-header-toggle-line:nth-child(1){top:0}.fedok144-header-toggle-line:nth-child(2){top:9px}.fedok144-header-toggle-line:nth-child(3){top:18px}
+  .fedok144-header-toggle.is-active .fedok144-header-toggle-line:nth-child(1){top:9px;transform:rotate(45deg);background:var(--fh-gold-deep)}
+  .fedok144-header-toggle.is-active .fedok144-header-toggle-line:nth-child(2){opacity:0}
+  .fedok144-header-toggle.is-active .fedok144-header-toggle-line:nth-child(3){top:9px;transform:rotate(-45deg);background:var(--fh-gold-deep)}
+  .fedok144-header-overlay{position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 82% 15%,rgba(201,169,98,.12),transparent 55%),#faf7f1;opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-14px);transition:opacity .55s cubic-bezier(.19,1,.22,1),transform .55s cubic-bezier(.19,1,.22,1),visibility 0s linear .55s}
+  .fedok144-header-overlay.is-open{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);transition:opacity .55s cubic-bezier(.19,1,.22,1),transform .55s cubic-bezier(.19,1,.22,1),visibility 0s linear 0s}
+  .fedok144-header-menu{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:clamp(24px,4vw,38px);text-align:center}
+  .fedok144-header-menu-link{position:relative;display:inline-block;font-family:Jost,Arial,sans-serif;font-weight:400;font-size:clamp(24px,4.6vw,36px);letter-spacing:.08em;text-transform:uppercase;color:#1a1a1a;text-decoration:none;padding-bottom:10px;transition:color .4s ease}
+  .fedok144-header-menu-link::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:#c9a962;transform:scaleX(0);transform-origin:center;transition:transform .45s cubic-bezier(.19,1,.22,1)}
+  .fedok144-header-menu-link:hover,.fedok144-header-menu-link:focus-visible{color:#8c6b2f}
+  .fedok144-header-menu-link:hover::after,.fedok144-header-menu-link:focus-visible::after{transform:scaleX(1)}
+  body.fedok144-menu-open{overflow:hidden}
+</style>
+<header class="fedok144-header">
+  <a href="/" class="fedok144-header-logo" aria-label="Fedok 144 Suites — Home">
+    <img src="https://i.postimg.cc/8kbSn7Ld/1000561817-removebg-preview.png" alt="Fedok 144 Suites">
+  </a>
+  <button type="button" class="fedok144-header-toggle" id="fedok144HeaderToggle" aria-label="Open menu" aria-expanded="false" aria-controls="fedok144HeaderOverlay">
+    <span class="fedok144-header-toggle-line"></span>
+    <span class="fedok144-header-toggle-line"></span>
+    <span class="fedok144-header-toggle-line"></span>
+  </button>
+</header>
+<div class="fedok144-header-overlay" id="fedok144HeaderOverlay" role="dialog" aria-modal="true" aria-label="Site navigation">
+  <nav>
+    <ul class="fedok144-header-menu">
+      <li><a href="/" class="fedok144-header-menu-link">Home</a></li>
+      <li><a href="/rooms-suites.html" class="fedok144-header-menu-link">Rooms & Suites</a></li>
+      <li><a href="/book.html" class="fedok144-header-menu-link">Book Now</a></li>
+    </ul>
+  </nav>
+</div>
+<script>
+(function(){var t=document.getElementById('fedok144HeaderToggle'),o=document.getElementById('fedok144HeaderOverlay');if(!t||!o)return;var L=o.querySelectorAll('.fedok144-header-menu-link');
+function open(){o.classList.add('is-open');t.classList.add('is-active');t.setAttribute('aria-expanded','true');t.setAttribute('aria-label','Close menu');document.body.classList.add('fedok144-menu-open');if(L.length)setTimeout(function(){L[0].focus()},300)}
+function close(f){o.classList.remove('is-open');t.classList.remove('is-active');t.setAttribute('aria-expanded','false');t.setAttribute('aria-label','Open menu');document.body.classList.remove('fedok144-menu-open');if(f)t.focus()}
+t.addEventListener('click',function(){o.classList.contains('is-open')?close(true):open()});
+o.addEventListener('click',function(e){if(e.target===o)close(false)});
+L.forEach(function(l){l.addEventListener('click',function(){close(false)})});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&o.classList.contains('is-open'))close(true)})})();
+</script>
+
+<!-- HERO -->
+<style>
+.fedok144-hero-section,.fedok144-hero-section *{box-sizing:border-box}
+.fedok144-hero-section{--fedok144-ivory:#faf7f1;--fedok144-ivory-deep:#f2ead9;--fedok144-charcoal:#242220;--fedok144-charcoal-soft:#5c5750;--fedok144-gold:#c9a962;--fedok144-gold-deep:#9c7a3a;position:relative;isolation:isolate;width:100%;min-height:100vh;min-height:100svh;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:clamp(90px,12vw,140px) clamp(20px,6vw,80px);background:radial-gradient(circle at 18% 12%,#fffdf9 0%,var(--fedok144-ivory) 45%,var(--fedok144-ivory-deep) 100%);font-family:Jost,Arial,sans-serif;opacity:0;animation:fedok144-section-fade 1.6s ease-out forwards}
+.fedok144-hero-bg{position:absolute;inset:0;z-index:0;background-image:none;background-size:cover;background-position:center}
+.fedok144-hero-overlay{position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(22,19,14,.62) 0%,rgba(22,19,14,.4) 55%,rgba(22,19,14,.58) 100%);opacity:0;pointer-events:none}
+.fedok144-hero-monogram{position:absolute;z-index:0;top:52%;left:50%;transform:translate(-50%,-50%);font-family:'Playfair Display',serif;font-weight:600;font-size:clamp(220px,32vw,480px);line-height:1;color:transparent;-webkit-text-stroke:1px rgba(201,169,98,.25);letter-spacing:-.02em;white-space:nowrap;pointer-events:none;user-select:none}
+.fedok144-hero-content{position:relative;z-index:2;max-width:860px;width:100%;text-align:center;padding:clamp(50px,6vw,90px) clamp(26px,5vw,72px)}
+.fedok144-hero-frame-tl,.fedok144-hero-frame-br{position:absolute;width:clamp(44px,6vw,74px);height:clamp(44px,6vw,74px);opacity:.9}
+.fedok144-hero-frame-tl{top:0;left:0;border-top:1px solid var(--fedok144-gold);border-left:1px solid var(--fedok144-gold)}
+.fedok144-hero-frame-br{bottom:0;right:0;border-bottom:1px solid var(--fedok144-gold);border-right:1px solid var(--fedok144-gold)}
+.fedok144-fade-item{animation-name:fedok144-fade-up;animation-duration:.9s;animation-timing-function:cubic-bezier(.19,1,.22,1);animation-fill-mode:both}
+.fedok144-eyebrow{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:clamp(20px,3vw,30px)}
+.fedok144-eyebrow-line{width:clamp(26px,4vw,46px);height:1px;background:linear-gradient(90deg,transparent,var(--fedok144-gold))}
+.fedok144-eyebrow-line.fedok144-eyebrow-line-right{background:linear-gradient(90deg,var(--fedok144-gold),transparent)}
+.fedok144-eyebrow-text{font-family:Jost,sans-serif;font-weight:500;font-size:clamp(11px,1.4vw,13px);letter-spacing:.3em;text-transform:uppercase;color:var(--fedok144-gold-deep);white-space:nowrap}
+.fedok144-headline{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:clamp(42px,7vw,84px);line-height:1.05;color:var(--fedok144-charcoal);margin:0 0 clamp(18px,2.6vw,26px);letter-spacing:-.01em}
+.fedok144-divider{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 auto clamp(26px,3.4vw,38px)}
+.fedok144-divider-line{width:clamp(46px,8vw,90px);height:1px;background:var(--fedok144-gold);opacity:.7}
+.fedok144-divider-diamond{width:7px;height:7px;background:var(--fedok144-gold);transform:rotate(45deg);flex-shrink:0}
+.fedok144-tagline{font-family:Jost,sans-serif;font-weight:300;font-size:clamp(16px,2vw,20px);color:var(--fedok144-charcoal-soft);letter-spacing:.01em;margin:0 0 clamp(36px,4.6vw,50px);min-height:1.7em}
+.fedok144-typewriter-text{display:inline-block;box-sizing:content-box;max-width:100%;overflow:hidden;white-space:nowrap;vertical-align:bottom;width:0;border-right:1.5px solid var(--fedok144-gold);padding-right:4px;animation:fedok144-typing 3.2s steps(30,end) 1.5s forwards,fedok144-blink .9s step-end infinite 1.5s}
+.fedok144-cta-group{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:clamp(16px,2.4vw,22px)}
+.fedok144-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;font-family:Jost,sans-serif;font-weight:500;font-size:clamp(12.5px,1.3vw,14.5px);letter-spacing:.16em;text-transform:uppercase;padding:clamp(15px,1.8vw,18px) clamp(32px,4vw,46px);border-radius:2px;text-decoration:none;cursor:pointer;transition:all .45s cubic-bezier(.19,1,.22,1);white-space:nowrap}
+.fedok144-btn-primary{background:var(--fedok144-gold);color:var(--fedok144-charcoal);border:1px solid var(--fedok144-gold);box-shadow:0 10px 26px -14px rgba(201,169,98,.85)}
+.fedok144-btn-primary:hover{background:var(--fedok144-charcoal);border-color:var(--fedok144-charcoal);color:var(--fedok144-ivory);transform:translateY(-2px)}
+.fedok144-btn-arrow{display:inline-block;transition:transform .4s ease}
+.fedok144-btn-primary:hover .fedok144-btn-arrow{transform:translateX(4px)}
+.fedok144-btn-secondary{background:transparent;color:var(--fedok144-charcoal);border:1px solid rgba(36,34,32,.35)}
+.fedok144-btn-secondary:hover{border-color:var(--fedok144-gold);color:var(--fedok144-gold-deep);background:rgba(201,169,98,.08);transform:translateY(-2px)}
+@keyframes fedok144-section-fade{from{opacity:0}to{opacity:1}}
+@keyframes fedok144-fade-up{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fedok144-typing{from{width:0}to{width:30ch}}
+@keyframes fedok144-blink{0%,100%{border-color:transparent}50%{border-color:var(--fedok144-gold)}}
+@media(max-width:640px){.fedok144-hero-section{padding:80px 20px}.fedok144-cta-group{flex-direction:column;width:100%}.fedok144-btn{width:100%}.fedok144-hero-frame-tl,.fedok144-hero-frame-br{display:none}.fedok144-hero-monogram{font-size:clamp(160px,55vw,260px);top:48%}}
+@media(prefers-reduced-motion:reduce){.fedok144-hero-section,.fedok144-fade-item{opacity:1!important;transform:none!important}.fedok144-typewriter-text{width:auto!important;border-right:none!important}}
+</style>
+<section class="fedok144-hero-section" id="fedok144-hero">
+  <div class="fedok144-hero-bg"></div>
+  <div class="fedok144-hero-overlay"></div>
+  <span class="fedok144-hero-monogram" aria-hidden="true">144</span>
+  <div class="fedok144-hero-content">
+    <div class="fedok144-hero-frame-tl" aria-hidden="true"></div>
+    <div class="fedok144-hero-frame-br" aria-hidden="true"></div>
+    <div class="fedok144-eyebrow fedok144-fade-item" style="animation-delay:.2s">
+      <span class="fedok144-eyebrow-line"></span>
+      <span class="fedok144-eyebrow-text">Luxury Suites · Yenagoa, Bayelsa</span>
+      <span class="fedok144-eyebrow-line fedok144-eyebrow-line-right"></span>
+    </div>
+    <h1 class="fedok144-headline fedok144-fade-item" style="animation-delay:.4s">Fedok 144 Suites</h1>
+    <div class="fedok144-divider fedok144-fade-item" style="animation-delay:.6s" aria-hidden="true">
+      <span class="fedok144-divider-line"></span>
+      <span class="fedok144-divider-diamond"></span>
+      <span class="fedok144-divider-line"></span>
+    </div>
+    <p class="fedok144-tagline fedok144-fade-item" style="animation-delay:.9s">
+      <span class="fedok144-typewriter-text">Luxury in the heart of Yenagoa</span>
+    </p>
+    <div class="fedok144-cta-group fedok144-fade-item" style="animation-delay:1.2s">
+      <a href="/book.html" class="fedok144-btn fedok144-btn-primary"><span>Book Your Stay</span><span class="fedok144-btn-arrow" aria-hidden="true">→</span></a>
+      <a href="#fedok144-suites" class="fedok144-btn fedok144-btn-secondary"><span>Explore Suites</span></a>
     </div>
   </div>
 </section>
 
-<section class="fedok-spotlight" aria-label="Property spotlight">
+<!-- FEATURED SUITES -->
+<style>
+.fedok144-suites-section,.fedok144-suites-section *{box-sizing:border-box}
+.fedok144-suites-section{--fs-ivory:#f8f5f0;--fs-card:#fff;--fs-charcoal:#1a1a1a;--fs-charcoal-soft:#5c584f;--fs-gold:#c9a962;--fs-gold-deep:#8c6b2f;background:var(--fs-ivory);padding:clamp(80px,10vw,120px) clamp(20px,6vw,80px);font-family:Inter,Arial,sans-serif}
+.fedok144-suites-header{max-width:640px;margin:0 auto clamp(52px,6vw,80px);text-align:center}
+.fedok144-suites-eyebrow{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:clamp(18px,2.4vw,24px)}
+.fedok144-suites-eyebrow-line{width:clamp(24px,3.5vw,42px);height:1px;background:linear-gradient(90deg,transparent,var(--fs-gold))}
+.fedok144-suites-eyebrow-line.fedok144-suites-eyebrow-line-right{background:linear-gradient(90deg,var(--fs-gold),transparent)}
+.fedok144-suites-eyebrow-text{font-weight:500;font-size:clamp(11px,1.3vw,13px);letter-spacing:.3em;text-transform:uppercase;color:var(--fs-gold-deep);white-space:nowrap}
+.fedok144-suites-title{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:clamp(34px,4.6vw,52px);line-height:1.1;color:var(--fs-charcoal);margin:0 0 clamp(18px,2.4vw,24px);letter-spacing:-.01em}
+.fedok144-suites-divider{display:flex;align-items:center;justify-content:center;gap:12px;margin:0 auto clamp(22px,3vw,30px)}
+.fedok144-suites-divider-line{width:clamp(40px,6vw,64px);height:1px;background:var(--fs-gold);opacity:.7}
+.fedok144-suites-divider-diamond{width:6px;height:6px;background:var(--fs-gold);transform:rotate(45deg);flex-shrink:0}
+.fedok144-suites-subtext{font-weight:300;font-size:clamp(15px,1.5vw,17px);line-height:1.7;color:var(--fs-charcoal-soft);margin:0}
+.fedok144-suites-grid{display:grid;grid-template-columns:1fr;gap:clamp(30px,4vw,42px);max-width:1240px;margin:0 auto}
+@media(min-width:700px){.fedok144-suites-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1024px){.fedok144-suites-grid{grid-template-columns:repeat(3,1fr)}}
+.fedok144-suite-card{display:flex;flex-direction:column;background:var(--fs-card);border-radius:4px;overflow:hidden;box-shadow:0 30px 60px -34px rgba(26,26,26,.22),0 2px 10px -4px rgba(26,26,26,.08);transition:transform .55s cubic-bezier(.19,1,.22,1),box-shadow .55s cubic-bezier(.19,1,.22,1)}
+.fedok144-suite-card:hover{transform:translateY(-8px);box-shadow:0 44px 70px -30px rgba(26,26,26,.28),0 4px 14px -4px rgba(26,26,26,.1)}
+.fedok144-suite-media{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--fs-ivory)}
+.fedok144-suite-media img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .9s cubic-bezier(.19,1,.22,1)}
+.fedok144-suite-card:hover .fedok144-suite-media img{transform:scale(1.06)}
+.fedok144-suite-body{padding:clamp(24px,3vw,32px) clamp(22px,3vw,30px) clamp(28px,3.4vw,34px);text-align:left}
+.fedok144-suite-name{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:clamp(21px,2.2vw,25px);color:var(--fs-charcoal);margin:0 0 12px;letter-spacing:-.01em}
+.fedok144-suite-rule{width:34px;height:1px;background:var(--fs-gold);margin:0 0 16px}
+.fedok144-suite-desc{font-weight:300;font-size:clamp(14.5px,1.4vw,16px);line-height:1.65;color:var(--fs-charcoal-soft);margin:0 0 26px}
+.fedok144-suite-link{position:relative;display:inline-flex;align-items:center;gap:9px;font-weight:500;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--fs-gold-deep);text-decoration:none;padding-bottom:5px}
+.fedok144-suite-link::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--fs-gold);opacity:.55;transform:scaleX(.28);transform-origin:left;transition:transform .45s cubic-bezier(.19,1,.22,1),opacity .45s ease}
+.fedok144-suite-link-arrow{display:inline-block;transition:transform .4s ease}
+.fedok144-suite-link:hover{color:var(--fs-charcoal)}
+.fedok144-suite-link:hover::after{transform:scaleX(1);opacity:1}
+.fedok144-suite-link:hover .fedok144-suite-link-arrow{transform:translateX(4px)}
+</style>
+<section class="fedok144-suites-section" id="fedok144-suites">
+  <div class="fedok144-suites-header">
+    <div class="fedok144-suites-eyebrow">
+      <span class="fedok144-suites-eyebrow-line"></span>
+      <span class="fedok144-suites-eyebrow-text">Featured Accommodations</span>
+      <span class="fedok144-suites-eyebrow-line fedok144-suites-eyebrow-line-right"></span>
+    </div>
+    <h2 class="fedok144-suites-title">Featured Suites</h2>
+    <div class="fedok144-suites-divider" aria-hidden="true">
+      <span class="fedok144-suites-divider-line"></span>
+      <span class="fedok144-suites-divider-diamond"></span>
+      <span class="fedok144-suites-divider-line"></span>
+    </div>
+    <p class="fedok144-suites-subtext">A curated selection of rooms and suites, each thoughtfully designed for comfort and quiet sophistication.</p>
+  </div>
+  <div class="fedok144-suites-grid">
+    <article class="fedok144-suite-card">
+      <div class="fedok144-suite-media"><img src="https://i.postimg.cc/NGWD1FrQ/grok-1786220199548.jpg" alt="Executive Suite" loading="lazy"></div>
+      <div class="fedok144-suite-body">
+        <h3 class="fedok144-suite-name">Executive Suite</h3>
+        <span class="fedok144-suite-rule"></span>
+        <p class="fedok144-suite-desc">Spacious luxury designed for comfort.</p>
+        <a href="/rooms/executive.html" class="fedok144-suite-link"><span>Explore Suite</span><span class="fedok144-suite-link-arrow" aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="fedok144-suite-card">
+      <div class="fedok144-suite-media"><img src="https://i.postimg.cc/1tBBGr6L/grok-1786218790192.jpg" alt="Deluxe Room" loading="lazy"></div>
+      <div class="fedok144-suite-body">
+        <h3 class="fedok144-suite-name">Deluxe Room</h3>
+        <span class="fedok144-suite-rule"></span>
+        <p class="fedok144-suite-desc">Sophisticated amenities and serene ambiance.</p>
+        <a href="/rooms/deluxe.html" class="fedok144-suite-link"><span>Explore Suite</span><span class="fedok144-suite-link-arrow" aria-hidden="true">→</span></a>
+      </div>
+    </article>
+    <article class="fedok144-suite-card">
+      <div class="fedok144-suite-media"><img src="https://i.postimg.cc/7hTCHxxR/grok-1786220242104.jpg" alt="Standard Room" loading="lazy"></div>
+      <div class="fedok144-suite-body">
+        <h3 class="fedok144-suite-name">Standard Room</h3>
+        <span class="fedok144-suite-rule"></span>
+        <p class="fedok144-suite-desc">Perfectly appointed for business and leisure.</p>
+        <a href="/rooms/standard.html" class="fedok144-suite-link"><span>Explore Suite</span><span class="fedok144-suite-link-arrow" aria-hidden="true">→</span></a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- SANCTUARY + AMENITIES + FOOTER -->
+<style>
+.fedok-spotlight,.fedok-spotlight *{box-sizing:border-box}
+.fedok-spotlight{--fedok-ivory:#F8F5F0;--fedok-charcoal:#1A1A1A;--fedok-muted:#5C5347;--fedok-gold:#C9A962;--fedok-shadow:0 2px 6px rgba(26,26,26,.05),0 14px 28px rgba(26,26,26,.07);background:var(--fedok-ivory);padding:110px 0;width:100%}
+.fedok-container{max-width:1240px;margin:0 auto;padding:0 24px}
+.fedok-spotlight__grid{display:grid;grid-template-columns:1.1fr 1fr;gap:72px;align-items:center}
+.fedok-media{position:relative;overflow:hidden;border-radius:6px;box-shadow:var(--fedok-shadow);background:#fff}
+.fedok-media img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .7s ease}
+.fedok-media:hover img{transform:scale(1.03)}
+.fedok-spotlight__media{aspect-ratio:4/5}
+.fedok-eyebrow{display:block;font-family:Inter,Jost,sans-serif;font-weight:500;font-size:.8rem;letter-spacing:.18em;text-transform:uppercase;color:var(--fedok-gold)}
+.fedok-divider{display:flex;align-items:center;gap:10px;width:64px;margin:16px 0 22px}
+.fedok-divider::before{content:'';flex:1;height:1px;background:var(--fedok-gold)}
+.fedok-divider__diamond{width:6px;height:6px;background:var(--fedok-gold);transform:rotate(45deg);flex-shrink:0}
+.fedok-spotlight__heading{margin:0;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(2rem,3.1vw,2.9rem);line-height:1.22;color:var(--fedok-charcoal)}
+.fedok-spotlight__text{margin:0 0 32px;max-width:440px;font-family:Inter,Jost,sans-serif;font-weight:300;font-size:1.05rem;line-height:1.85;color:var(--fedok-muted)}
+.fedok-link{position:relative;display:inline-block;font-family:Inter,Jost,sans-serif;font-weight:500;font-size:.85rem;letter-spacing:.1em;text-transform:uppercase;color:var(--fedok-charcoal);text-decoration:none;padding-bottom:5px}
+.fedok-link::after{content:'';position:absolute;left:0;bottom:0;width:100%;height:1px;background:var(--fedok-gold);transform:scaleX(0);transform-origin:left;transition:transform .4s ease}
+.fedok-link:hover::after{transform:scaleX(1)}
+.fedok-collage{display:flex;gap:20px;width:100%;max-width:420px;margin-top:44px}
+.fedok-collage__item{flex:1;aspect-ratio:1}
+.fedok-collage__item--offset{margin-top:30px}
+@media(max-width:900px){.fedok-spotlight__grid{grid-template-columns:1fr;gap:44px}.fedok-spotlight__media{aspect-ratio:16/10}.fedok-spotlight__content{text-align:center;align-items:center;display:flex;flex-direction:column}.fedok-divider{margin-left:auto;margin-right:auto}.fedok-collage{margin-left:auto;margin-right:auto}}
+.fedok-amenities{--fedok-ivory:#F8F5F0;--fedok-charcoal:#1A1A1A;--fedok-muted:#5C5347;--fedok-gold:#C9A962;--fedok-shadow:0 2px 6px rgba(26,26,26,.05),0 14px 28px rgba(26,26,26,.07);background:var(--fedok-ivory);padding:100px 0 130px;width:100%}
+.fedok-amenities__header{text-align:center;max-width:620px;margin:0 auto 60px}
+.fedok-amenities__heading{margin:0;font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:clamp(2rem,3.1vw,2.9rem);color:var(--fedok-charcoal)}
+.fedok-amenities__lede{margin:20px 0 0;font-family:Inter,Jost,sans-serif;font-weight:300;font-size:1.02rem;line-height:1.8;color:var(--fedok-muted)}
+.fedok-amenities__grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;max-width:1240px;margin:0 auto;padding:0 24px}
+.fedok-amenity-card{background:#fff;border-radius:12px;box-shadow:var(--fedok-shadow);padding:40px 22px 34px;text-align:center;transition:transform .4s ease}
+.fedok-amenity-card:hover{transform:translateY(-8px)}
+.fedok-amenity-card--photo{padding:0;overflow:hidden}
+.fedok-amenity-card--photo .fedok-amenity-card__visual{aspect-ratio:16/11}
+.fedok-amenity-card--photo .fedok-amenity-card__body{padding:26px 22px 30px}
+.fedok-amenity-card__icon{width:58px;height:58px;margin:0 auto 22px;border-radius:50%;background:rgba(201,169,98,.09);display:flex;align-items:center;justify-content:center;color:var(--fedok-gold)}
+.fedok-amenity-card__icon svg{width:26px;height:26px}
+.fedok-amenity-card__title{margin:0 0 10px;font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:1.2rem;color:var(--fedok-charcoal)}
+.fedok-amenity-card__desc{margin:0;font-family:Inter,Jost,sans-serif;font-weight:300;font-size:.92rem;line-height:1.65;color:var(--fedok-muted)}
+@media(max-width:900px){.fedok-amenities__grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.fedok-amenities__grid{grid-template-columns:1fr}}
+.site-footer{background:#262019;color:#F8F5F0;padding:64px 24px 32px}
+.site-footer__inner{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:40px}
+.site-footer__brand{font-family:'Playfair Display',Georgia,serif;font-size:1.4rem;margin-bottom:12px}
+.site-footer__tag{font-family:Inter,Jost,sans-serif;font-weight:300;font-size:.95rem;line-height:1.7;color:rgba(248,245,240,.7);max-width:280px}
+.site-footer__col h4{font-family:Inter,Jost,sans-serif;font-weight:500;font-size:.75rem;letter-spacing:.15em;text-transform:uppercase;color:#C6A664;margin:0 0 16px}
+.site-footer__col a,.site-footer__col p{display:block;font-family:Inter,Jost,sans-serif;font-weight:300;font-size:.92rem;color:rgba(248,245,240,.8);text-decoration:none;margin:0 0 10px;line-height:1.5}
+.site-footer__col a:hover{color:#C6A664}
+.site-footer__bottom{max-width:1240px;margin:40px auto 0;padding-top:24px;border-top:1px solid rgba(248,245,240,.12);font-family:Inter,Jost,sans-serif;font-size:.8rem;color:rgba(248,245,240,.5);text-align:center}
+@media(max-width:768px){.site-footer__inner{grid-template-columns:1fr}}
+</style>
+
+<section class="fedok-spotlight" aria-label="Exclusive sanctuary">
   <div class="fedok-container">
     <div class="fedok-spotlight__grid">
       <div class="fedok-spotlight__media fedok-media">
@@ -151,24 +268,23 @@
       </div>
       <div class="fedok-spotlight__content">
         <span class="fedok-eyebrow">An Exclusive Sanctuary</span>
-        <div class="fedok-divider fedok-divider--left" aria-hidden="true"><span class="fedok-divider__diamond"></span></div>
+        <div class="fedok-divider" aria-hidden="true"><span class="fedok-divider__diamond"></span></div>
         <h2 class="fedok-spotlight__heading">Where Elegance Meets Complete Privacy</h2>
         <p class="fedok-spotlight__text">Set behind a secure perimeter and softly lit courtyards, Fedok @144 Suites offers a private retreat in the heart of Yenagoa. Every arrival is met with quiet assurance — discreet access, attentive service, and a stillness that lets you simply arrive.</p>
         <a href="#amenities" class="fedok-link">Explore Grounds</a>
         <div class="fedok-collage">
-          <div class="fedok-collage__item fedok-media"><img src="https://i.postimg.cc/d0PjzVYM/grok-1786232677285.jpg" alt="Reception desk" loading="lazy"></div>
-          <div class="fedok-collage__item fedok-collage__item--offset fedok-media"><img src="https://i.postimg.cc/Zq8xZzbC/grok-1786232706663.jpg" alt="Lobby lounge" loading="lazy"></div>
+          <div class="fedok-collage__item fedok-media"><img src="https://i.postimg.cc/d0PjzVYM/grok-1786232677285.jpg" alt="Reception" loading="lazy"></div>
+          <div class="fedok-collage__item fedok-collage__item--offset fedok-media"><img src="https://i.postimg.cc/Zq8xZzbC/grok-1786232706663.jpg" alt="Lobby" loading="lazy"></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section id="amenities" class="fedok-amenities" aria-label="Amenities">
+<section id="amenities" class="fedok-amenities">
   <div class="fedok-container">
     <div class="fedok-amenities__header">
-      <span class="fedok-eyebrow fedok-eyebrow--dashed">Property Amenities</span>
-      <div class="fedok-divider" aria-hidden="true"><span class="fedok-divider__diamond"></span></div>
+      <span class="fedok-eyebrow">— Property Amenities —</span>
       <h2 class="fedok-amenities__heading">Amenities & Services</h2>
       <p class="fedok-amenities__lede">Every detail considered, every comfort anticipated — the quiet essentials of a five-star stay.</p>
     </div>
@@ -196,44 +312,6 @@
   </div>
 </section>
 
-<section id="suites" class="fedok-suites">
-  <div class="fedok-suites__header">
-    <span class="fedok-eyebrow fedok-eyebrow--dashed">Featured Accommodations</span>
-    <div class="fedok-divider" aria-hidden="true"><span class="fedok-divider__diamond"></span></div>
-    <h2 class="fedok-amenities__heading">Featured Suites</h2>
-    <p class="fedok-amenities__lede">A curated selection of rooms and suites, each thoughtfully designed for comfort, quiet, and considered detail.</p>
-  </div>
-  <div class="fedok-suites__grid">
-    <article class="fedok-suite-card">
-      <div class="fedok-suite-card__media"><img src="https://i.postimg.cc/d0mgy97m/grok-1786498676099.jpg" alt="Executive Suite" loading="lazy"></div>
-      <div class="fedok-suite-card__body">
-        <h3 class="fedok-suite-card__name">Executive Suite</h3>
-        <div class="fedok-suite-card__price">₦85,000 / night</div>
-        <p class="fedok-suite-card__desc">Spacious luxury designed for comfort.</p>
-        <a class="fedok-suite-card__link" href="/rooms/executive.html">View Suite →</a>
-      </div>
-    </article>
-    <article class="fedok-suite-card">
-      <div class="fedok-suite-card__media"><img src="https://i.postimg.cc/j2GfKPhf/grok-1786497835696.jpg" alt="Deluxe Room" loading="lazy"></div>
-      <div class="fedok-suite-card__body">
-        <h3 class="fedok-suite-card__name">Deluxe Room</h3>
-        <div class="fedok-suite-card__price">₦55,000 / night</div>
-        <p class="fedok-suite-card__desc">Sophisticated amenities and serene ambiance.</p>
-        <a class="fedok-suite-card__link" href="/rooms/deluxe.html">View Suite →</a>
-      </div>
-    </article>
-    <article class="fedok-suite-card">
-      <div class="fedok-suite-card__media"><img src="https://i.postimg.cc/Y0XXHzC8/grok-1786218686714.jpg" alt="Standard Room" loading="lazy"></div>
-      <div class="fedok-suite-card__body">
-        <h3 class="fedok-suite-card__name">Standard Room</h3>
-        <div class="fedok-suite-card__price">₦35,000 / night</div>
-        <p class="fedok-suite-card__desc">Perfectly appointed for business and leisure.</p>
-        <a class="fedok-suite-card__link" href="/rooms/standard.html">View Suite →</a>
-      </div>
-    </article>
-  </div>
-</section>
-
 <footer class="site-footer">
   <div class="site-footer__inner">
     <div>
@@ -242,8 +320,8 @@
     </div>
     <div class="site-footer__col">
       <h4>Explore</h4>
-      <a href="#suites">Suites</a>
-      <a href="#amenities">Amenities</a>
+      <a href="/">Home</a>
+      <a href="/rooms-suites.html">Rooms & Suites</a>
       <a href="/book.html">Book Now</a>
       <a href="/guest-portal.html">Guest Portal</a>
     </div>
@@ -255,20 +333,6 @@
   </div>
   <div class="site-footer__bottom">© Fedok 144 Suites · Yenagoa, Bayelsa</div>
 </footer>
-<script>
-const toggle=document.getElementById('menu-toggle');
-const mobile=document.getElementById('mobile-menu');
-if(toggle&&mobile){
-  toggle.addEventListener('click',()=>{
-    const open=toggle.getAttribute('aria-expanded')==='true';
-    toggle.setAttribute('aria-expanded',String(!open));
-    mobile.classList.toggle('is-open',!open);
-  });
-  mobile.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
-    toggle.setAttribute('aria-expanded','false');
-    mobile.classList.remove('is-open');
-  }));
-}
-</script>
+
 </body>
 </html>
