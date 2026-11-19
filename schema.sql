@@ -1,75 +1,78 @@
--- Fedokhotel D1 Schema (Cloudflare D1)
--- Run with: wrangler d1 execute fedokhotel --file=./schema.sql
+-- Fedok 144 Suites — Cloudflare D1 schema
+-- Database name (create in dashboard): fedok144-db
 
 PRAGMA foreign_keys = ON;
 
--- Room types (Standard, Deluxe, Executive)
 CREATE TABLE IF NOT EXISTS room_types (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  slug          TEXT NOT NULL UNIQUE,          -- standard | deluxe | executive
-  name          TEXT NOT NULL,
-  description   TEXT,
-  base_price    INTEGER NOT NULL,              -- in Naira (whole naira)
-  max_adults    INTEGER NOT NULL DEFAULT 2,
-  max_children  INTEGER NOT NULL DEFAULT 0,
-  amenities     TEXT,                          -- JSON array
-  image_url     TEXT,
-  sort_order    INTEGER NOT NULL DEFAULT 0,
-  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  slug TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  base_price_ngn INTEGER NOT NULL,
+  max_guests INTEGER NOT NULL DEFAULT 2,
+  description TEXT,
+  amenities_json TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
--- Individual physical rooms
 CREATE TABLE IF NOT EXISTS rooms (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  type_id       INTEGER NOT NULL REFERENCES room_types(id),
-  room_number   TEXT NOT NULL UNIQUE,
-  status        TEXT NOT NULL DEFAULT 'available', -- available | maintenance | blocked
-  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  room_type_id INTEGER NOT NULL REFERENCES room_types(id),
+  room_number TEXT NOT NULL UNIQUE,
+  floor INTEGER,
+  status TEXT NOT NULL DEFAULT 'available'
+    CHECK (status IN ('available','occupied','maintenance','blocked')),
+  notes TEXT
 );
 
--- Bookings
 CREATE TABLE IF NOT EXISTS bookings (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  room_id           INTEGER REFERENCES rooms(id),
-  room_type_id      INTEGER NOT NULL REFERENCES room_types(id),
-  guest_name        TEXT NOT NULL,
-  guest_email       TEXT NOT NULL,
-  guest_phone       TEXT,
-  check_in          TEXT NOT NULL,               -- YYYY-MM-DD
-  check_out         TEXT NOT NULL,
-  guests            INTEGER NOT NULL DEFAULT 1,
-  total_price       INTEGER,                     -- calculated
-  status            TEXT NOT NULL DEFAULT 'pending', -- pending | confirmed | cancelled | completed
-  payment_status    TEXT NOT NULL DEFAULT 'unpaid',  -- unpaid | partial | paid | refunded
-  payment_method    TEXT,
-  notes             TEXT,
-  source            TEXT DEFAULT 'website',
-  booking_token     TEXT UNIQUE,                 -- public reference
-  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reference TEXT NOT NULL UNIQUE,
+  source TEXT NOT NULL DEFAULT 'online'
+    CHECK (source IN ('online','walkin','phone','ota')),
+  room_type_id INTEGER NOT NULL REFERENCES room_types(id),
+  room_id INTEGER REFERENCES rooms(id),
+  guest_name TEXT NOT NULL,
+  guest_email TEXT,
+  guest_phone TEXT NOT NULL,
+  check_in TEXT NOT NULL,
+  check_out TEXT NOT NULL,
+  guests INTEGER NOT NULL DEFAULT 1,
+  nights INTEGER NOT NULL,
+  total_ngn INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending','confirmed','checked_in','checked_out','cancelled','no_show')),
+  payment_status TEXT NOT NULL DEFAULT 'unpaid'
+    CHECK (payment_status IN ('unpaid','partial','paid','refunded')),
+  notes TEXT,
+  created_by TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS staff (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  username TEXT NOT NULL UNIQUE,
+  display_name TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'receptionist'
+    CHECK (role IN ('receptionist','manager','admin')),
+  pin_hash TEXT,
+  active INTEGER NOT NULL DEFAULT 1
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(check_in, check_out);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
-CREATE INDEX IF NOT EXISTS idx_bookings_token ON bookings(booking_token);
+CREATE INDEX IF NOT EXISTS idx_bookings_ref ON bookings(reference);
+CREATE INDEX IF NOT EXISTS idx_rooms_type ON rooms(room_type_id);
 
--- Seed the three room types (matches original design)
-INSERT OR IGNORE INTO room_types (slug, name, description, base_price, amenities, image_url, sort_order) VALUES
-('standard',  'Standard Room',  'Thoughtfully designed for comfort and ease — the Standard Room offers an inviting, cozy retreat equipped with all the essential modern amenities for a restful and seamless stay.', 35000,
- '["wifi","ac","tv","breakfast","pool"]',
- 'https://i.postimg.cc/Y0XXHzC8/grok-1786218686714.jpg', 1),
+INSERT OR IGNORE INTO room_types (id, slug, name, base_price_ngn, max_guests, description) VALUES
+  (1, 'standard',  'Standard Room',   35000, 2, 'Thoughtfully designed for comfort and ease.'),
+  (2, 'deluxe',    'Deluxe Room',     55000, 2, 'Contemporary style and quiet sophistication.'),
+  (3, 'executive', 'Executive Suite', 85000, 3, 'Expansive luxury with private lounge and workspace.');
 
-('deluxe',    'Deluxe Room',    'A harmonious blend of contemporary style, warm neutral tones, and functional ease — the Deluxe Room is composed for guests who want comfort without compromise, and quiet sophistication in every considered detail.', 55000,
- '["wifi","ac","tv","queen-bed","24-7-room-service","king-sized-bed"]',
- 'https://i.postimg.cc/j2GfKPhf/grok-1786497835696.jpg', 2),
-
-('executive', 'Executive Suite','The pinnacle of luxury and space — the Executive Suite combines an expansive king-sized sleeping area, a private lounge, a dedicated workspace, and an upscale ensuite bathroom designed for guests who expect absolute distinction.', 85000,
- '["wifi","ac","tv","breakfast","pool","complimentary-breakfast","24-7-room-service","private-lounge-area","dedicated-workspace","king-sized-bed","luxury-ensuite-bathroom"]',
- 'https://i.postimg.cc/d0mgy97m/grok-1786498676099.jpg', 3);
-
--- Seed rooms
-INSERT OR IGNORE INTO rooms (type_id, room_number) VALUES
-(1, '101'), (1, '102'),
-(2, '201'), (2, '202'),
-(3, '401'), (3, '402');
+INSERT OR IGNORE INTO rooms (room_type_id, room_number, floor, status) VALUES
+  (1, '101', 1, 'available'),
+  (1, '102', 1, 'available'),
+  (2, '201', 2, 'available'),
+  (2, '202', 2, 'available'),
+  (3, '301', 3, 'available'),
+  (3, '302', 3, 'available');

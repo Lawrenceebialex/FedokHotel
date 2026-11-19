@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Portal · Fedok 144</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #F8F5F0; margin: 0; font-family: Inter, sans-serif; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 120px 24px 80px; text-align: center; }
+    h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: #1A1A1A; margin-bottom: 0.75rem; }
+    p { color: #5C5347; line-height: 1.7; margin-bottom: 1.5rem; }
+    .card { background: #fff; border-radius: 12px; padding: 2rem; box-shadow: 0 8px 30px rgba(26,26,26,0.06); text-align: left; }
+    label { display: block; font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem; color: #5C5347; }
+    input { width: 100%; padding: 0.85rem 1rem; border: 1px solid rgba(26,26,26,0.15); border-radius: 4px; margin-bottom: 1rem; font-size: 1rem; box-sizing: border-box; }
+    button { width: 100%; background: #C9A962; color: #1A1A1A; border: none; padding: 1rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 2px; cursor: pointer; }
+    button:hover { background: #B8955A; }
+    a.back { color: #C9A962; text-decoration: none; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="/">← Fedok 144</a>
+    <h1>Guest Portal</h1>
+    <p>Look up your reservation or request concierge assistance during your stay.</p>
+    <div class="card">
+      <form id="lookup-form">
+        <label for="ref">Booking reference</label>
+        <input id="ref" name="ref" placeholder="FED-XXXXXXXX" required>
+        <label for="phone">Phone number used at booking</label>
+        <input id="phone" name="phone" type="tel" placeholder="0803..." required>
+        <button type="submit">Find my booking</button>
+      </form>
+      <p id="msg" style="margin-top:1rem;font-size:0.9rem;color:#5C5347;"></p>
+    </div>
+  </div>
+  <script>
+    document.getElementById('lookup-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById('msg');
+      msg.textContent = 'Backend not connected yet. After you deploy the Worker + D1, this form will return your stay details.';
+    });
+  </script>
+</body>
+</html>
