@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Standard Room | Fedokhotel</title>
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Inter:wght@400;500;600&display=swap');
+.standard-tier-page{
+  --st-bg:#F8F5F0;
+  --st-ink:#1A1A1A;
+  --st-ink-soft:rgba(26,26,26,.62);
+  --st-gold:#C9A962;
+  --st-gold-tint:rgba(201,169,98,.12);
+  --st-border:rgba(26,26,26,.1);
+  --st-max:1180px;
+  --st-radius-sm:2px;
+  --st-radius-md:4px;
+  --st-radius-lg:8px;
+  position:relative;
+  width:100vw;
+  margin-left:calc(50% - 50vw);
+  margin-right:calc(50% - 50vw);
+  background:var(--st-bg);
+  color:var(--st-ink);
+  font-family:'Inter',Arial,sans-serif;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.standard-tier-page,
+.standard-tier-page *{ box-sizing:border-box; }
+.standard-tier-page img{ max-width:100%; display:block; }
+.standard-tier-page a{ text-decoration:none; }
+.standard-tier-page p,
+.standard-tier-page h1,
+.standard-tier-page h2{ margin:0; }
+.standard-tier-container{
+  max-width:var(--st-max);
+  margin:0 auto;
+  padding:0 clamp(1.25rem,4vw,3rem);
+}
+/* ============ HERO ============ */
+.standard-tier-hero{
+  padding:clamp(4rem,9vw,6.5rem) 0 clamp(3rem,6vw,4rem);
+  text-align:center;
+}
+.standard-tier-eyebrow{
+  display:block;
+  font-family:'Inter',Arial,sans-serif;
+  font-size:.78rem;
+  font-weight:600;
+  letter-spacing:.28em;
+  text-transform:uppercase;
+  color:var(--st-gold);
+  margin-bottom:1.5rem;
+}
+.standard-tier-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:600;
+  font-size:clamp(2.2rem,5.5vw,3.6rem);
+  line-height:1.15;
+  color:var(--st-ink);
+  margin-bottom:1.4rem;
+}
+.standard-tier-price{
+  display:inline-flex;
+  align-items:baseline;
+  gap:.3rem;
+  border:1px solid var(--st-gold);
+  background:var(--st-gold-tint);
+  color:var(--st-ink);
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:600;
+  font-size:1rem;
+  padding:.5rem 1.1rem;
+  border-radius:999px;
+  margin-bottom:1.8rem;
+}
+.standard-tier-price-unit{
+  font-weight:400;
+  font-size:.8rem;
+  color:var(--st-ink-soft);
+}
+.standard-tier-lede{
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:400;
+  font-size:clamp(1rem,1.6vw,1.12rem);
+  line-height:1.75;
+  color:var(--st-ink-soft);
+  max-width:62ch;
+  margin:0 auto;
+}
+/* ============ GALLERY (single prominent image) ============ */
+.standard-tier-gallery{ padding-bottom:clamp(3.5rem,7vw,5rem); }
+.standard-tier-gallery__frame{
+  position:relative;
+  overflow:hidden;
+  border-radius:var(--st-radius-lg);
+  box-shadow:0 2px 8px rgba(26,26,26,.06), 0 24px 48px rgba(26,26,26,.12);
+  aspect-ratio:21/9;
+}
+.standard-tier-gallery__image{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:transform .65s cubic-bezier(.16,1,.3,1);
+}
+.standard-tier-gallery__frame:hover .standard-tier-gallery__image{ transform:scale(1.06); }
+/* ============ HIGHLIGHTS & RESERVATION ============ */
+.standard-tier-highlights{ padding-bottom:clamp(4rem,8vw,6rem); }
+.standard-tier-highlights__heading{
+  font-family:'Playfair Display',Georgia,serif;
+  font-weight:600;
+  font-size:clamp(1.4rem,2.6vw,1.8rem);
+  color:var(--st-ink);
+  text-align:center;
+  margin-bottom:clamp(1.75rem,3.5vw,2.5rem);
+}
+.standard-tier-highlights__grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1rem;
+}
+.standard-tier-highlights__card{
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  background:#FFFFFF;
+  border:1px solid var(--st-border);
+  border-radius:var(--st-radius-md);
+  box-shadow:0 2px 6px rgba(26,26,26,.04);
+  padding:1.05rem 1.25rem;
+}
+.standard-tier-highlights__marker{
+  width:8px;
+  height:8px;
+  background:var(--st-gold);
+  transform:rotate(45deg);
+  flex-shrink:0;
+}
+.standard-tier-highlights__label{
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:500;
+  font-size:.94rem;
+  color:var(--st-ink);
+}
+.standard-tier-cta{
+  text-align:center;
+  margin-top:clamp(2.5rem,5vw,3.25rem);
+}
+.standard-tier-btn{
+  display:inline-block;
+  background:var(--st-gold);
+  color:var(--st-ink);
+  border:1px solid var(--st-gold);
+  font-family:'Inter',Arial,sans-serif;
+  font-weight:600;
+  font-size:.85rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:1.05rem 3.25rem;
+  border-radius:var(--st-radius-sm);
+  transition:background-color .3s ease, border-color .3s ease;
+}
+.standard-tier-btn:hover{ background:#B8955A; border-color:#B8955A; }
+.standard-tier-btn:focus-visible{ outline:2px solid var(--st-ink); outline-offset:3px; }
+/* ============ RESPONSIVE ============ */
+@media (max-width:900px){
+  .standard-tier-gallery__frame{ aspect-ratio:16/9; }
+  .standard-tier-highlights__grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (max-width:600px){
+  .standard-tier-gallery__frame{ aspect-ratio:4/3; }
+  .standard-tier-highlights__grid{ grid-template-columns:1fr; }
+}
+@media (prefers-reduced-motion:reduce){
+  .standard-tier-gallery__image{ transition:none; }
+  .standard-tier-btn{ transition:none; }
+}
+  </style>
+</head>
+<body>
+<div class="standard-tier-page">
+  <div class="standard-tier-container">
+    <section class="standard-tier-hero">
+      <span class="standard-tier-eyebrow">&mdash; Accommodation Tier &mdash;</span>
+      <h1 class="standard-tier-title">The Standard Room</h1>
+      <div class="standard-tier-price">&#8358;35,000 <span class="standard-tier-price-unit">/ night</span></div>
+      <p class="standard-tier-lede">Thoughtfully designed for comfort and ease &mdash; the Standard Room offers an inviting, cozy retreat equipped with all the essential modern amenities for a restful and seamless stay.</p>
+    </section>
+
+    <section class="standard-tier-gallery">
+      <div class="standard-tier-gallery__frame">
+        <img class="standard-tier-gallery__image" src="https://i.postimg.cc/Y0XXHzC8/grok-1786218686714.jpg" alt="Standard Room view" loading="lazy" decoding="async">
+      </div>
+    </section>
+
+    <section class="standard-tier-highlights">
+      <h2 class="standard-tier-highlights__heading">Room Highlights</h2>
+      <div class="standard-tier-highlights__grid">
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">Queen Bed</span></div>
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">High-Speed Wi-Fi</span></div>
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">Climate Control</span></div>
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">Complimentary Breakfast</span></div>
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">Smart Entertainment</span></div>
+        <div class="standard-tier-highlights__card"><span class="standard-tier-highlights__marker"></span><span class="standard-tier-highlights__label">24/7 Room Service</span></div>
+      </div>
+      <div class="standard-tier-cta">
+        <a class="standard-tier-btn" href="/book-now">Reserve Now</a>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
