@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rooms & Suites · Fedok 144</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Jost:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: #f8f5f0; font-family: Inter, Jost, sans-serif; color: #1a1a1a; }
+    .fedok144-header { position: sticky; top: 0; z-index: 1000; display: flex; align-items: center; justify-content: space-between; background: #faf7f1; border-bottom: 1px solid #c9a962; padding: clamp(14px, 2vw, 20px) clamp(20px, 5vw, 56px); }
+    .fedok144-header-logo img { height: clamp(32px, 4.2vw, 50px); width: auto; display: block; }
+    .fedok144-header-nav { display: flex; gap: 28px; align-items: center; }
+    .fedok144-header-nav a { font-family: Jost, sans-serif; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; color: #1a1a1a; text-decoration: none; }
+    .fedok144-header-nav a:hover { color: #8c6b2f; }
+    .page-hero { text-align: center; padding: clamp(4rem, 8vw, 6rem) 24px 2rem; }
+    .page-hero .eyebrow { font-size: 0.78rem; letter-spacing: 0.28em; text-transform: uppercase; color: #c9a962; margin-bottom: 1rem; }
+    .page-hero h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: clamp(2.2rem, 5vw, 3.4rem); margin: 0 0 1rem; }
+    .page-hero p { max-width: 52ch; margin: 0 auto; color: #5c584f; line-height: 1.7; font-weight: 300; }
+    .list { max-width: 1180px; margin: 0 auto; padding: 2rem 24px 5rem; display: flex; flex-direction: column; gap: 4rem; }
+    .item { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+    .item--reverse { direction: rtl; }
+    .item--reverse > * { direction: ltr; }
+    .item__media { border-radius: 6px; overflow: hidden; aspect-ratio: 4/3; box-shadow: 0 20px 40px rgba(26,26,26,.1); }
+    .item__media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .item__name { font-family: 'Playfair Display', Georgia, serif; font-weight: 600; font-size: clamp(1.6rem, 3vw, 2.1rem); margin: 0 0 0.5rem; }
+    .item__price { color: #c9a962; font-weight: 500; margin-bottom: 1rem; }
+    .item__desc { color: #5c584f; line-height: 1.75; font-weight: 300; margin: 0 0 1.25rem; }
+    .item__highlights { list-style: none; padding: 0; margin: 0 0 1.5rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem 1rem; }
+    .item__highlights li { font-size: 0.9rem; padding-left: 1rem; position: relative; }
+    .item__highlights li::before { content: ''; position: absolute; left: 0; top: 0.55em; width: 6px; height: 6px; background: #c9a962; transform: rotate(45deg); }
+    .btn { display: inline-block; background: #c9a962; color: #1a1a1a; font-weight: 600; font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.95rem 1.75rem; text-decoration: none; border-radius: 2px; }
+    .btn:hover { background: #b8955a; }
+    .btn-outline { background: transparent; border: 1px solid #1a1a1a; margin-left: 0.75rem; }
+    .btn-outline:hover { background: #1a1a1a; color: #f8f5f0; }
+    footer { background: #262019; color: rgba(248,245,240,.7); text-align: center; padding: 2rem; font-size: 0.85rem; }
+    @media (max-width: 800px) {
+      .item, .item--reverse { grid-template-columns: 1fr; direction: ltr; gap: 1.5rem; }
+      .fedok144-header-nav { display: none; }
+      .item__highlights { grid-template-columns: 1fr; }
+      .btn-outline { margin-left: 0; margin-top: 0.5rem; display: inline-block; }
+    }
+  </style>
+</head>
+<body>
+  <header class="fedok144-header">
+    <a href="/" class="fedok144-header-logo" aria-label="Home">
+      <img src="https://i.postimg.cc/8kbSn7Ld/1000561817-removebg-preview.png" alt="Fedok 144 Suites">
+    </a>
+    <nav class="fedok144-header-nav">
+      <a href="/">Home</a>
+      <a href="/rooms-suites.html">Rooms &amp; Suites</a>
+      <a href="/book.html">Book Now</a>
+    </nav>
+  </header>
+
+  <section class="page-hero">
+    <div class="eyebrow">— Accommodations —</div>
+    <h1>Sanctuaries of Comfort &amp; Distinction</h1>
+    <p>Each room and suite is shaped around comfort, quiet, and considered detail — inviting spaces designed for rest, reflection, and the simple pleasure of staying somewhere thoughtfully made.</p>
+  </section>
+
+  <div class="list">
+    <article class="item">
+      <div class="item__media">
+        <img src="https://i.postimg.cc/NGWD1FrQ/grok-1786220199548.jpg" alt="Executive Suite" loading="lazy">
+      </div>
+      <div>
+        <h2 class="item__name">Executive Suite</h2>
+        <div class="item__price">₦85,000 / night</div>
+        <p class="item__desc">The pinnacle of luxury and space — expansive king bed, private lounge, dedicated workspace, and upscale ensuite.</p>
+        <ul class="item__highlights">
+          <li>King-Sized Bed</li><li>Private Lounge</li><li>Dedicated Workspace</li>
+          <li>Luxury Ensuite</li><li>High-Speed Wi-Fi</li><li>24/7 Room Service</li>
+        </ul>
+        <a class="btn" href="/rooms/executive.html">View Suite</a>
+        <a class="btn btn-outline" href="/book.html?room=executive">Reserve Now</a>
+      </div>
+    </article>
+
+    <article class="item item--reverse">
+      <div class="item__media">
+        <img src="https://i.postimg.cc/1tBBGr6L/grok-1786218790192.jpg" alt="Deluxe Room" loading="lazy">
+      </div>
+      <div>
+        <h2 class="item__name">Deluxe Room</h2>
+        <div class="item__price">₦55,000 / night</div>
+        <p class="item__desc">Contemporary style and quiet sophistication — warm neutrals, functional ease, and considered detail throughout.</p>
+        <ul class="item__highlights">
+          <li>Queen or King Bed</li><li>High-Speed Wi-Fi</li><li>Climate Control</li>
+          <li>Complimentary Breakfast</li><li>Smart Entertainment</li><li>24/7 Room Service</li>
+        </ul>
+        <a class="btn" href="/rooms/deluxe.html">View Suite</a>
+        <a class="btn btn-outline" href="/book.html?room=deluxe">Reserve Now</a>
+      </div>
+    </article>
+
+    <article class="item">
+      <div class="item__media">
+        <img src="https://i.postimg.cc/7hTCHxxR/grok-1786220242104.jpg" alt="Standard Room" loading="lazy">
+      </div>
+      <div>
+        <h2 class="item__name">Standard Room</h2>
+        <div class="item__price">₦35,000 / night</div>
+        <p class="item__desc">Thoughtfully designed for comfort and ease — a cozy retreat with all essential modern amenities.</p>
+        <ul class="item__highlights">
+          <li>Queen Bed</li><li>High-Speed Wi-Fi</li><li>Climate Control</li>
+          <li>Complimentary Breakfast</li><li>Smart Entertainment</li><li>24/7 Room Service</li>
+        </ul>
+        <a class="btn" href="/rooms/standard.html">View Suite</a>
+        <a class="btn btn-outline" href="/book.html?room=standard">Reserve Now</a>
+      </div>
+    </article>
+  </div>
+
+  <footer>© Fedok 144 Suites · Yenagoa, Bayelsa</footer>
+</body>
+</html>

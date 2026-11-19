@@ -1,5 +1,6 @@
--- Fedok 144 Suites — Cloudflare D1 schema
--- Database name (create in dashboard): fedok144-db
+-- Fedok 144 Suites — ALL Cloudflare D1 schemas
+-- Database name: fedok144-db
+-- Run entire file in D1 console or: wrangler d1 execute fedok144-db --file=./schema.sql
 
 PRAGMA foreign_keys = ON;
 
@@ -11,6 +12,8 @@ CREATE TABLE IF NOT EXISTS room_types (
   max_guests INTEGER NOT NULL DEFAULT 2,
   description TEXT,
   amenities_json TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -56,23 +59,64 @@ CREATE TABLE IF NOT EXISTS staff (
   role TEXT NOT NULL DEFAULT 'receptionist'
     CHECK (role IN ('receptionist','manager','admin')),
   pin_hash TEXT,
-  active INTEGER NOT NULL DEFAULT 1
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Guest requests (concierge). Food ordering was NOT in the original WP site.
+CREATE TABLE IF NOT EXISTS guest_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id INTEGER NOT NULL REFERENCES bookings(id),
+  request_type TEXT NOT NULL
+    CHECK (request_type IN ('housekeeping','room_service','amenity','late_checkout','other')),
+  title TEXT NOT NULL,
+  details TEXT,
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open','in_progress','done','cancelled')),
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Optional future room-service menu + orders
+CREATE TABLE IF NOT EXISTS menu_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  category TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  price_ngn INTEGER NOT NULL,
+  available INTEGER NOT NULL DEFAULT 1,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS room_service_orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  booking_id INTEGER NOT NULL REFERENCES bookings(id),
+  room_id INTEGER REFERENCES rooms(id),
+  items_json TEXT NOT NULL,
+  total_ngn INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'received'
+    CHECK (status IN ('received','preparing','delivered','cancelled')),
+  created_at TEXT DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookings_dates ON bookings(check_in, check_out);
 CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
 CREATE INDEX IF NOT EXISTS idx_bookings_ref ON bookings(reference);
+CREATE INDEX IF NOT EXISTS idx_bookings_phone ON bookings(guest_phone);
 CREATE INDEX IF NOT EXISTS idx_rooms_type ON rooms(room_type_id);
+CREATE INDEX IF NOT EXISTS idx_requests_booking ON guest_requests(booking_id);
 
-INSERT OR IGNORE INTO room_types (id, slug, name, base_price_ngn, max_guests, description) VALUES
-  (1, 'standard',  'Standard Room',   35000, 2, 'Thoughtfully designed for comfort and ease.'),
-  (2, 'deluxe',    'Deluxe Room',     55000, 2, 'Contemporary style and quiet sophistication.'),
-  (3, 'executive', 'Executive Suite', 85000, 3, 'Expansive luxury with private lounge and workspace.');
+INSERT OR IGNORE INTO room_types (id, slug, name, base_price_ngn, max_guests, description, sort_order) VALUES
+  (1, 'standard',  'Standard Room',   35000, 2, 'Thoughtfully designed for comfort and ease.', 1),
+  (2, 'deluxe',    'Deluxe Room',     55000, 2, 'Contemporary style and quiet sophistication.', 2),
+  (3, 'executive', 'Executive Suite', 85000, 3, 'Expansive luxury with private lounge and workspace.', 3);
 
 INSERT OR IGNORE INTO rooms (room_type_id, room_number, floor, status) VALUES
   (1, '101', 1, 'available'),
   (1, '102', 1, 'available'),
+  (1, '103', 1, 'available'),
   (2, '201', 2, 'available'),
   (2, '202', 2, 'available'),
+  (2, '203', 2, 'available'),
   (3, '301', 3, 'available'),
   (3, '302', 3, 'available');
