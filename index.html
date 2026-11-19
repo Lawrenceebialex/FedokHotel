@@ -3,59 +3,306 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fedokhotel · Rooms & Suites</title>
+  <title>Fedok 144 Suites · Yenagoa</title>
   <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ========== Homepage Hero (restored from original) ========== */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      overflow: hidden;
+      background: #0f0e0c;
+      color: #F8F5F0;
+    }
+
+    .hero__bg {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg, rgba(15,14,12,0.45) 0%, rgba(15,14,12,0.55) 40%, rgba(15,14,12,0.85) 100%),
+        url('https://i.postimg.cc/d0mgy97m/grok-1786498676099.jpg') center/cover no-repeat;
+      transform: scale(1.05);
+      animation: heroZoom 22s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroZoom {
+      from { transform: scale(1.05); }
+      to   { transform: scale(1.12); }
+    }
+
+    .hero__content {
+      position: relative;
+      z-index: 2;
+      padding: clamp(5rem, 12vw, 8rem) 1.5rem 4rem;
+      max-width: 820px;
+    }
+
+    .hero__eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.75rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .hero__eyebrow-line {
+      width: clamp(28px, 4vw, 48px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+
+    .hero__eyebrow-line--right {
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    .hero__title {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(2.8rem, 8vw, 5.2rem);
+      line-height: 1.08;
+      margin-bottom: 1.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .hero__divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .hero__divider-line {
+      width: clamp(40px, 6vw, 72px);
+      height: 1px;
+      background: var(--gold);
+    }
+
+    .hero__divider-diamond {
+      width: 7px;
+      height: 7px;
+      background: var(--gold);
+      transform: rotate(45deg);
+    }
+
+    .hero__tagline {
+      font-weight: 400;
+      font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+      line-height: 1.6;
+      color: rgba(248, 245, 240, 0.82);
+      max-width: 28ch;
+      margin: 0 auto 2.5rem;
+    }
+
+    .hero__cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--gold);
+      color: #1A1A1A;
+      font-weight: 600;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 1.1rem 2.75rem;
+      border-radius: 2px;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    .hero__cta:hover {
+      background: #B8955A;
+      transform: translateY(-2px);
+    }
+
+    .hero__scroll {
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(248, 245, 240, 0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hero__scroll-line {
+      width: 1px;
+      height: 36px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.4; transform: scaleY(0.8); }
+      50% { opacity: 1; transform: scaleY(1); }
+    }
+
+    /* Dark header over hero */
+    .site-header--transparent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: transparent;
+      border-bottom: 1px solid transparent;
+      color: #F8F5F0;
+    }
+
+    .site-header--transparent .site-logo,
+    .site-header--transparent .site-nav a {
+      color: #F8F5F0;
+    }
+
+    .site-header--transparent .site-nav a:hover {
+      color: var(--gold);
+    }
+
+    /* Featured section header (matches original) */
+    .featured-header {
+      text-align: center;
+      max-width: 640px;
+      margin: 0 auto clamp(3rem, 6vw, 4.5rem);
+      padding-top: clamp(4rem, 8vw, 6rem);
+    }
+
+    .featured-eyebrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      margin-bottom: 1.25rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+    }
+
+    .featured-eyebrow-line {
+      width: clamp(24px, 3.5vw, 42px);
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold));
+    }
+
+    .featured-eyebrow-line--right {
+      background: linear-gradient(90deg, var(--gold), transparent);
+    }
+
+    .featured-title {
+      font-family: var(--font-serif);
+      font-weight: 600;
+      font-size: clamp(1.9rem, 4vw, 2.6rem);
+      margin-bottom: 1rem;
+    }
+
+    .featured-sub {
+      font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+      color: var(--ink-soft);
+      line-height: 1.7;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero__bg { animation: none; }
+      .hero__scroll-line { animation: none; }
+    }
+  </style>
 </head>
 <body>
-  <header class="site-header">
+  <!-- Transparent header over hero -->
+  <header class="site-header site-header--transparent">
     <div class="container site-header__inner">
-      <a href="/" class="site-logo">Fedokhotel</a>
+      <a href="/" class="site-logo">Fedok 144</a>
       <nav class="site-nav">
-        <a href="/">Rooms</a>
+        <a href="/#rooms">Rooms</a>
         <a href="/book.html">Book Now</a>
       </nav>
     </div>
   </header>
 
-  <main class="page">
+  <!-- Full cinematic hero (restored) -->
+  <section class="hero" id="hero">
+    <div class="hero__bg" aria-hidden="true"></div>
+    <div class="hero__content">
+      <div class="hero__eyebrow">
+        <span class="hero__eyebrow-line"></span>
+        <span>Luxury Suites · Yenagoa, Bayelsa</span>
+        <span class="hero__eyebrow-line hero__eyebrow-line--right"></span>
+      </div>
+
+      <h1 class="hero__title">Fedok 144 Suites</h1>
+
+      <div class="hero__divider" aria-hidden="true">
+        <span class="hero__divider-line"></span>
+        <span class="hero__divider-diamond"></span>
+        <span class="hero__divider-line"></span>
+      </div>
+
+      <p class="hero__tagline">Experience refined luxury in the heart of Yenagoa</p>
+
+      <a href="/book.html" class="hero__cta">Book Your Stay</a>
+    </div>
+
+    <div class="hero__scroll" aria-hidden="true">
+      <span>Scroll</span>
+      <span class="hero__scroll-line"></span>
+    </div>
+  </section>
+
+  <!-- Featured rooms (original structure) -->
+  <main class="page" id="rooms">
     <div class="container">
-      <section class="room-hero">
-        <span class="room-eyebrow">— Welcome —</span>
-        <h1 class="room-title">Rooms & Suites</h1>
-        <p class="room-lede">Thoughtfully designed spaces for rest, work, and quiet luxury in the heart of Port Harcourt.</p>
-      </section>
+      <header class="featured-header">
+        <div class="featured-eyebrow">
+          <span class="featured-eyebrow-line"></span>
+          <span>Featured Accommodations</span>
+          <span class="featured-eyebrow-line featured-eyebrow-line--right"></span>
+        </div>
+        <h2 class="featured-title">Featured Suites</h2>
+        <p class="featured-sub">A curated selection of rooms and suites, each thoughtfully designed for comfort, quiet, and considered detail.</p>
+      </header>
 
       <section class="rooms-grid">
-        <!-- Standard -->
-        <article class="room-card">
-          <img class="room-card__image" src="https://i.postimg.cc/Y0XXHzC8/grok-1786218686714.jpg" alt="Standard Room" loading="lazy">
-          <div class="room-card__body">
-            <h2 class="room-card__title">Standard Room</h2>
-            <div class="room-card__price">₦35,000 / night</div>
-            <p class="room-card__desc">Cozy retreat with all essential modern amenities for a restful stay.</p>
-            <a class="btn" href="/rooms/standard.html">View Room</a>
-          </div>
-        </article>
-
-        <!-- Deluxe -->
-        <article class="room-card">
-          <img class="room-card__image" src="https://i.postimg.cc/j2GfKPhf/grok-1786497835696.jpg" alt="Deluxe Room" loading="lazy">
-          <div class="room-card__body">
-            <h2 class="room-card__title">Deluxe Room</h2>
-            <div class="room-card__price">₦55,000 / night</div>
-            <p class="room-card__desc">Contemporary style and quiet sophistication without compromise.</p>
-            <a class="btn" href="/rooms/deluxe.html">View Room</a>
-          </div>
-        </article>
-
-        <!-- Executive -->
         <article class="room-card">
           <img class="room-card__image" src="https://i.postimg.cc/d0mgy97m/grok-1786498676099.jpg" alt="Executive Suite" loading="lazy">
           <div class="room-card__body">
             <h2 class="room-card__title">Executive Suite</h2>
             <div class="room-card__price">₦85,000 / night</div>
-            <p class="room-card__desc">Expansive luxury with private lounge, workspace and upscale ensuite.</p>
-            <a class="btn" href="/rooms/executive.html">View Room</a>
+            <p class="room-card__desc">Spacious luxury designed for comfort.</p>
+            <a class="btn" href="/rooms/executive.html">View Suite</a>
+          </div>
+        </article>
+
+        <article class="room-card">
+          <img class="room-card__image" src="https://i.postimg.cc/j2GfKPhf/grok-1786497835696.jpg" alt="Deluxe Room" loading="lazy">
+          <div class="room-card__body">
+            <h2 class="room-card__title">Deluxe Room</h2>
+            <div class="room-card__price">₦55,000 / night</div>
+            <p class="room-card__desc">Sophisticated amenities and serene ambiance.</p>
+            <a class="btn" href="/rooms/deluxe.html">View Suite</a>
+          </div>
+        </article>
+
+        <article class="room-card">
+          <img class="room-card__image" src="https://i.postimg.cc/Y0XXHzC8/grok-1786218686714.jpg" alt="Standard Room" loading="lazy">
+          <div class="room-card__body">
+            <h2 class="room-card__title">Standard Room</h2>
+            <div class="room-card__price">₦35,000 / night</div>
+            <p class="room-card__desc">Perfectly appointed for business and leisure.</p>
+            <a class="btn" href="/rooms/standard.html">View Suite</a>
           </div>
         </article>
       </section>
@@ -63,7 +310,7 @@
   </main>
 
   <footer class="site-footer">
-    <div class="container">© Fedokhotel · Port Harcourt</div>
+    <div class="container">© Fedok 144 Suites · Yenagoa, Bayelsa</div>
   </footer>
 </body>
 </html>
