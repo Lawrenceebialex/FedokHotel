@@ -1,13 +1,12 @@
 /**
  * Strict CORS — only origins present in the FedokHotel frontend.
- * No wildcards.
+ * No wildcards. Credentials enabled for allowed origin.
  */
 
 export const ALLOWED_ORIGINS = new Set([
   "https://fedokhotel.pages.dev"
 ]);
 
-/** Methods the API may accept (also used for preflight validation). */
 export const ALLOWED_METHODS = new Set([
   "GET",
   "POST",
@@ -17,17 +16,12 @@ export const ALLOWED_METHODS = new Set([
   "OPTIONS"
 ]);
 
-/** Request headers clients may send (case-insensitive match). */
 export const ALLOWED_REQUEST_HEADERS = new Set([
   "content-type",
   "authorization",
   "x-request-id"
 ]);
 
-/**
- * @param {Request} request
- * @returns {Record<string, string>}
- */
 export function corsHeaders(request) {
   const origin = request.headers.get("Origin");
   const headers = {
@@ -40,25 +34,18 @@ export function corsHeaders(request) {
 
   if (origin && ALLOWED_ORIGINS.has(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
+    headers["Access-Control-Allow-Credentials"] = "true";
   }
 
   return headers;
 }
 
-/**
- * @param {Request} request
- */
 export function isOriginAllowed(request) {
   const origin = request.headers.get("Origin");
-  if (!origin) return true; // non-browser / same-origin tooling
+  if (!origin) return true;
   return ALLOWED_ORIGINS.has(origin);
 }
 
-/**
- * Validate an OPTIONS preflight request.
- * @param {Request} request
- * @returns {{ ok: true } | { ok: false, error: string, message: string }}
- */
 export function validatePreflight(request) {
   const origin = request.headers.get("Origin");
   if (!origin || !ALLOWED_ORIGINS.has(origin)) {

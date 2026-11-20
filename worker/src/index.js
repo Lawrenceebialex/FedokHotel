@@ -1,10 +1,6 @@
 /**
- * Fedok 144 Suites API — Phase 1 foundation
- * Worker: fedok144-api
- * Bindings: DB (D1 fedok144-db), MEDIA (R2 fedok144-media)
- *
- * Phase 1: routing, CORS, JSON/errors, health, security headers.
- * Later phases: auth, reservations, rooms, concierge, payments, staff.
+ * Fedok 144 Suites API
+ * Phase 1 foundation + Phase 2 staff authentication
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -12,8 +8,9 @@ import { createRequestId, json, errorJson, securityHeaders } from "./lib/respons
 import { checkHealth } from "./lib/health.js";
 import { matchRoute } from "./lib/router.js";
 import { readJsonBody } from "./lib/request.js";
+import * as authRoutes from "./routes/auth.js";
+import * as staffRoutes from "./routes/staff.js";
 
-/** @type {import("./lib/router.js").Route[]} */
 const routes = [
   {
     method: "GET",
@@ -21,25 +18,24 @@ const routes = [
     handler: async (_request, env, ctx) => {
       const result = await checkHealth(env);
       const { healthy, ...publicBody } = result;
-      // Preserve existing response structure: worker, database, storage only.
       return json(publicBody, healthy ? 200 : 503, ctx.corsHeaders, ctx.requestId);
     }
-  }
-  // Phase 2+: POST /auth/login, GET/POST /bookings, etc.
+  },
+  { method: "POST", path: "/api/auth/login", handler: authRoutes.login },
+  { method: "POST", path: "/api/auth/logout", handler: authRoutes.logout },
+  { method: "GET", path: "/api/auth/me", handler: authRoutes.me },
+  { method: "GET", path: "/api/staff", handler: staffRoutes.listStaff },
+  { method: "POST", path: "/api/staff", handler: staffRoutes.createStaff },
+  { method: "PATCH", path: "/api/staff/:id", handler: staffRoutes.updateStaff },
+  { method: "POST", path: "/api/staff/:id/password-reset", handler: staffRoutes.resetPassword }
 ];
 
 export default {
-  /**
-   * @param {Request} request
-   * @param {any} env
-   * @param {ExecutionContext} _executionContext
-   */
   async fetch(request, env, _executionContext) {
     const requestId = createRequestId();
     const cors = corsHeaders(request);
     const baseHeaders = { ...cors, ...securityHeaders(), "X-Request-Id": requestId };
 
-    // Preflight — validate Origin, requested method, and requested headers
     if (request.method === "OPTIONS") {
       const preflight = validatePreflight(request);
       if (!preflight.ok) {
@@ -51,13 +47,9 @@ export default {
           requestId
         );
       }
-      return new Response(null, {
-        status: 204,
-        headers: baseHeaders
-      });
+      return new Response(null, { status: 204, headers: baseHeaders });
     }
 
-    // Optional: reject disallowed browser origins early (non-browser clients have no Origin).
     const origin = request.headers.get("Origin");
     if (origin && !isOriginAllowed(request)) {
       return errorJson(
@@ -72,7 +64,7 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
 
-    const { route, allowedMethods, matchedPath } = matchRoute(
+    const { route, params, allowedMethods, matchedPath } = matchRoute(
       routes,
       request.method,
       pathname
@@ -83,10 +75,7 @@ export default {
         "method_not_allowed",
         `Method ${request.method} is not allowed for this path.`,
         405,
-        {
-          ...baseHeaders,
-          Allow: allowedMethods.join(", ")
-        },
+        { ...baseHeaders, Allow: allowedMethods.join(", ") },
         requestId
       );
     }
@@ -106,6 +95,7 @@ export default {
       corsHeaders: cors,
       url,
       pathname,
+      params: params || {},
       readJsonBody: (req) => readJsonBody(req, baseHeaders, requestId)
     };
 
