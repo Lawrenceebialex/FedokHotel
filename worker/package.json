@@ -1,0 +1,13 @@
+{
+  "name": "fedok144-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "API backend for Fedok 144 Suites",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
