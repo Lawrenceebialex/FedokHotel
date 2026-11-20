@@ -1,11 +1,14 @@
 {
   "name": "fedok144-api",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
+  "type": "module",
   "description": "API backend for Fedok 144 Suites",
   "scripts": {
     "deploy": "wrangler deploy",
-    "dev": "wrangler dev"
+    "dev": "wrangler dev",
+    "test": "node test/phase2-auth.test.js",
+    "migrate:local": "echo 'Run: npx wrangler d1 execute fedok144-db --remote --file=./migrations/001_staff_auth.sql'"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
