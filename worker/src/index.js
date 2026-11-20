@@ -7,7 +7,7 @@
  * Later phases: auth, reservations, rooms, concierge, payments, staff.
  */
 
-import { corsHeaders, isOriginAllowed } from "./lib/cors.js";
+import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
 import { createRequestId, json, errorJson, securityHeaders } from "./lib/response.js";
 import { checkHealth } from "./lib/health.js";
 import { matchRoute } from "./lib/router.js";
@@ -39,8 +39,18 @@ export default {
     const cors = corsHeaders(request);
     const baseHeaders = { ...cors, ...securityHeaders(), "X-Request-Id": requestId };
 
-    // Preflight
+    // Preflight — validate Origin, requested method, and requested headers
     if (request.method === "OPTIONS") {
+      const preflight = validatePreflight(request);
+      if (!preflight.ok) {
+        return errorJson(
+          preflight.error,
+          preflight.message,
+          403,
+          { ...securityHeaders(), "X-Request-Id": requestId, Vary: "Origin" },
+          requestId
+        );
+      }
       return new Response(null, {
         status: 204,
         headers: baseHeaders

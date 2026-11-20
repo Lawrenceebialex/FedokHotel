@@ -16,7 +16,7 @@ export const MAX_BODY_BYTES = 64 * 1024;
  */
 export async function readJsonBody(request, baseHeaders, requestId, maxBytes = MAX_BODY_BYTES) {
   const contentType = request.headers.get("Content-Type") || "";
-  if (!contentType.toLowerCase().includes("application/json")) {
+  if (!isJsonContentType(contentType)) {
     return {
       ok: false,
       response: jsonError(
@@ -144,4 +144,16 @@ function jsonError(error, message, status, baseHeaders, requestId) {
       ...baseHeaders
     }
   });
+}
+
+/**
+ * Strict media-type check: application/json with optional parameters
+ * (e.g. charset=utf-8). Rejects text/plain, application/jsonx, etc.
+ * @param {string} header
+ */
+export function isJsonContentType(header) {
+  if (!header || typeof header !== "string") return false;
+  // Take the type/subtype before any parameters
+  const mediaType = header.split(";")[0].trim().toLowerCase();
+  return mediaType === "application/json";
 }
