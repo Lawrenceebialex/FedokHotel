@@ -36,3 +36,5 @@ requests. If the website later uses a custom domain, add its exact origin to
 ## Secrets
 Never commit Paystack secret keys, email credentials, passwords, or API tokens.
 Add those later as Cloudflare Worker secrets.
+
+GitHub deployment test.
