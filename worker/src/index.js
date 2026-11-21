@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phase 1 + Phase 2 (production-readiness corrections)
+ * Fedok 144 Suites API — Phase 1–3
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -11,6 +11,9 @@ import { validateCsrf } from "./lib/csrf.js";
 import { readSessionTokenFromCookie } from "./lib/session.js";
 import * as authRoutes from "./routes/auth.js";
 import * as staffRoutes from "./routes/staff.js";
+import * as roomTypes from "./routes/roomTypes.js";
+import * as rooms from "./routes/rooms.js";
+import * as hotelSettings from "./routes/hotelSettings.js";
 
 const routes = [
   {
@@ -28,7 +31,17 @@ const routes = [
   { method: "GET", path: "/api/staff", handler: staffRoutes.listStaff },
   { method: "POST", path: "/api/staff", handler: staffRoutes.createStaff },
   { method: "PATCH", path: "/api/staff/:id", handler: staffRoutes.updateStaff },
-  { method: "POST", path: "/api/staff/:id/password-reset", handler: staffRoutes.resetPassword }
+  { method: "POST", path: "/api/staff/:id/password-reset", handler: staffRoutes.resetPassword },
+  { method: "GET", path: "/api/config/room-types", handler: roomTypes.listRoomTypes },
+  { method: "GET", path: "/api/config/room-types/:id", handler: roomTypes.getRoomType },
+  { method: "POST", path: "/api/config/room-types", handler: roomTypes.createRoomType },
+  { method: "PATCH", path: "/api/config/room-types/:id", handler: roomTypes.updateRoomType },
+  { method: "GET", path: "/api/config/rooms", handler: rooms.listRooms },
+  { method: "GET", path: "/api/config/rooms/:id", handler: rooms.getRoom },
+  { method: "POST", path: "/api/config/rooms", handler: rooms.createRoom },
+  { method: "PATCH", path: "/api/config/rooms/:id", handler: rooms.updateRoom },
+  { method: "GET", path: "/api/config/settings", handler: hotelSettings.getSettings },
+  { method: "PUT", path: "/api/config/settings", handler: hotelSettings.updateSettings }
 ];
 
 const CSRF_EXEMPT = new Set(["/api/auth/login"]);
