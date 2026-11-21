@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phase 1–3
+ * Fedok 144 Suites API — Phases 1–4
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -11,9 +11,12 @@ import { validateCsrf } from "./lib/csrf.js";
 import { readSessionTokenFromCookie } from "./lib/session.js";
 import * as authRoutes from "./routes/auth.js";
 import * as staffRoutes from "./routes/staff.js";
-import * as roomTypes from "./routes/roomTypes.js";
+import * as roomCategories from "./routes/roomCategories.js";
 import * as rooms from "./routes/rooms.js";
-import * as hotelSettings from "./routes/hotelSettings.js";
+import * as hotelProfile from "./routes/hotelProfile.js";
+import * as availability from "./routes/availability.js";
+import * as reservations from "./routes/reservations.js";
+import * as reception from "./routes/reception.js";
 
 const routes = [
   {
@@ -32,19 +35,40 @@ const routes = [
   { method: "POST", path: "/api/staff", handler: staffRoutes.createStaff },
   { method: "PATCH", path: "/api/staff/:id", handler: staffRoutes.updateStaff },
   { method: "POST", path: "/api/staff/:id/password-reset", handler: staffRoutes.resetPassword },
-  { method: "GET", path: "/api/config/room-types", handler: roomTypes.listRoomTypes },
-  { method: "GET", path: "/api/config/room-types/:id", handler: roomTypes.getRoomType },
-  { method: "POST", path: "/api/config/room-types", handler: roomTypes.createRoomType },
-  { method: "PATCH", path: "/api/config/room-types/:id", handler: roomTypes.updateRoomType },
+  { method: "GET", path: "/api/config/room-categories", handler: roomCategories.listCategories },
+  { method: "GET", path: "/api/config/room-categories/:id", handler: roomCategories.getCategory },
+  { method: "POST", path: "/api/config/room-categories", handler: roomCategories.createCategory },
+  { method: "PATCH", path: "/api/config/room-categories/:id", handler: roomCategories.updateCategory },
   { method: "GET", path: "/api/config/rooms", handler: rooms.listRooms },
   { method: "GET", path: "/api/config/rooms/:id", handler: rooms.getRoom },
   { method: "POST", path: "/api/config/rooms", handler: rooms.createRoom },
   { method: "PATCH", path: "/api/config/rooms/:id", handler: rooms.updateRoom },
-  { method: "GET", path: "/api/config/settings", handler: hotelSettings.getSettings },
-  { method: "PUT", path: "/api/config/settings", handler: hotelSettings.updateSettings }
+  { method: "GET", path: "/api/config/hotel-profile", handler: hotelProfile.getProfile },
+  { method: "PATCH", path: "/api/config/hotel-profile", handler: hotelProfile.updateProfile },
+  { method: "GET", path: "/api/public/availability", handler: availability.publicAvailability },
+  { method: "POST", path: "/api/public/reservations", handler: reservations.publicCreate },
+  { method: "GET", path: "/api/public/reservations/:reference", handler: reservations.publicLookup },
+  { method: "GET", path: "/api/reservations", handler: reservations.listReservations },
+  { method: "POST", path: "/api/reservations", handler: reservations.staffCreate },
+  { method: "GET", path: "/api/reservations/:id", handler: reservations.getReservation },
+  { method: "PATCH", path: "/api/reservations/:id", handler: reservations.updateReservation },
+  { method: "POST", path: "/api/reservations/:id/cancel", handler: reservations.cancelReservation },
+  { method: "POST", path: "/api/reception/check-in", handler: reception.checkIn },
+  { method: "POST", path: "/api/reception/check-out", handler: reception.checkOut },
+  { method: "POST", path: "/api/reception/move-room", handler: reception.moveRoom }
 ];
 
-const CSRF_EXEMPT = new Set(["/api/auth/login"]);
+const CSRF_EXEMPT = new Set([
+  "/api/auth/login",
+  "/api/public/availability",
+  "/api/public/reservations"
+]);
+
+function isCsrfExempt(pathname) {
+  if (CSRF_EXEMPT.has(pathname)) return true;
+  if (pathname.startsWith("/api/public/reservations/")) return true;
+  return false;
+}
 
 export default {
   async fetch(request, env, _executionContext) {
@@ -80,7 +104,7 @@ export default {
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
 
-    if (!CSRF_EXEMPT.has(pathname)) {
+    if (!isCsrfExempt(pathname)) {
       const cookieSession = readSessionTokenFromCookie(request);
       const csrf = validateCsrf(request, cookieSession);
       if (!csrf.ok) {
