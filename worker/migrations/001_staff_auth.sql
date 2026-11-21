@@ -1,9 +1,14 @@
 -- Migration 001: staff authentication (additive, idempotent)
--- Safe to re-run. Does not drop or alter existing non-auth tables.
+-- DO NOT apply to production until live schema has been inspected.
+-- Expected columns are documented in SCHEMA_AUTH.md.
+-- This file only uses CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS.
+-- It does NOT ALTER existing tables. If production tables exist with different
+-- columns, apply a separate additive ALTER migration only after inspection.
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   id TEXT PRIMARY KEY,
-  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+  applied_at TEXT NOT NULL DEFAULT (datetime('now')),
+  notes TEXT
 );
 
 CREATE TABLE IF NOT EXISTS staff_users (
@@ -21,11 +26,8 @@ CREATE TABLE IF NOT EXISTS staff_users (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_users_username
   ON staff_users(username);
 
-CREATE INDEX IF NOT EXISTS idx_staff_users_role
-  ON staff_users(role);
-
-CREATE INDEX IF NOT EXISTS idx_staff_users_active
-  ON staff_users(active);
+CREATE INDEX IF NOT EXISTS idx_staff_users_role ON staff_users(role);
+CREATE INDEX IF NOT EXISTS idx_staff_users_active ON staff_users(active);
 
 CREATE TABLE IF NOT EXISTS staff_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,12 +43,8 @@ CREATE TABLE IF NOT EXISTS staff_sessions (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_staff_sessions_token_hash
   ON staff_sessions(token_hash);
-
-CREATE INDEX IF NOT EXISTS idx_staff_sessions_user
-  ON staff_sessions(staff_user_id);
-
-CREATE INDEX IF NOT EXISTS idx_staff_sessions_expires
-  ON staff_sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_staff_sessions_user ON staff_sessions(staff_user_id);
+CREATE INDEX IF NOT EXISTS idx_staff_sessions_expires ON staff_sessions(expires_at);
 
 CREATE TABLE IF NOT EXISTS audit_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,14 +57,9 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_audit_logs_action
-  ON audit_logs(action);
-
-CREATE INDEX IF NOT EXISTS idx_audit_logs_actor
-  ON audit_logs(actor_staff_id);
-
-CREATE INDEX IF NOT EXISTS idx_audit_logs_created
-  ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_staff_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at);
 
 CREATE TABLE IF NOT EXISTS login_attempts (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,8 +71,8 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 
 CREATE INDEX IF NOT EXISTS idx_login_attempts_user_time
   ON login_attempts(username_key, attempted_at);
-
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time
   ON login_attempts(ip, attempted_at);
 
-INSERT OR IGNORE INTO schema_migrations (id) VALUES ('001_staff_auth');
+INSERT OR IGNORE INTO schema_migrations (id, notes)
+VALUES ('001_staff_auth', 'Creates staff_users/staff_sessions/audit_logs/login_attempts if absent');

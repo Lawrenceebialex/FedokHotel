@@ -1,36 +1,54 @@
-# Staff authentication schema (Phase 2)
+# Staff authentication schema (Phase 2) — production readiness
 
-## Live D1 access note
+## Production inspection required
 
-This environment could not authenticate to Cloudflare to run `PRAGMA` against production `fedok144-db`.
-Reconciliation is based on:
+This environment **cannot** authenticate to Cloudflare D1. Do **not** treat `CREATE TABLE IF NOT EXISTS` as proof that production is compatible.
 
-1. Repository `schema.sql` (legacy `staff` with `pin_hash`, roles `receptionist|manager|admin`).
-2. Prior live verification that named `staff_users`, `staff_sessions`, `audit_logs`.
+Before applying any migration to production:
 
-## Additive migration
+```bash
+npx wrangler d1 execute fedok144-db --remote --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
+npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(staff_users);"
+npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(staff_sessions);"
+npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(audit_logs);"
+```
 
-`migrations/001_staff_auth.sql` creates (IF NOT EXISTS):
+If tables exist with different columns, **stop** and design an additive ALTER migration. Do not drop data.
 
-| Table | Purpose |
-|-------|---------|
-| `schema_migrations` | Migration tracking |
-| `staff_users` | Staff accounts (manager / receptionist / kitchen) |
-| `staff_sessions` | Opaque session token hashes + expiry / revoke |
-| `audit_logs` | Security and admin events |
-| `login_attempts` | Brute-force counters |
+Runtime helper: `inspectAuthSchema(env.DB)` in `src/lib/schemaCheck.js`.
 
-Legacy table `staff` (if present) is **not** dropped. New auth uses `staff_users` only.
+## Expected columns (auth code)
 
-## Apply to production D1
+### staff_users
+id, username (UNIQUE NOCASE), display_name, role (`manager|receptionist|kitchen`), password_hash, active (0|1), created_at, updated_at, last_login_at
+
+### staff_sessions
+id, staff_user_id, token_hash (UNIQUE), expires_at, revoked_at, created_at, ip, user_agent
+
+### audit_logs
+id, actor_staff_id, action, target_type, target_id, metadata_json, ip, created_at
+
+### login_attempts
+id, username_key, ip, success (0|1), attempted_at
+
+### schema_migrations
+id, applied_at, notes
+
+Legacy repo table `staff` (pin_hash, admin role) is **not** used by this API.
+
+## Username rules
+- 3–32 chars, lowercase after normalize
+- Must start with a letter: `^[a-z][a-z0-9._-]*$`
+- No spaces
+
+## Password hashing
+- Format: `pbkdf2$v1$120000$<saltHex>$<hashHex>`
+- Web Crypto PBKDF2-SHA-256, 120k iterations (Workers CPU trade-off; not argon2id)
+- Legacy `pbkdf2$iters$salt$hash` still verifies
+
+## Apply migration (only after inspection)
 
 ```bash
 cd worker
 npx wrangler d1 execute fedok144-db --remote --file=./migrations/001_staff_auth.sql
 ```
-
-## Roles
-
-- `manager` — staff administration + all future ops
-- `receptionist` — future reception ops only
-- `kitchen` — future kitchen ops only
