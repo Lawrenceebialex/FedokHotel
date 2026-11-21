@@ -1,5 +1,5 @@
 /**
- * Session cookies and validation against staff_sessions.
+ * Session cookies + staff_sessions (production: ip_address, join staff_users.is_active)
  */
 
 import { generateSessionToken, hashToken, SESSION_TTL_HOURS } from "./crypto.js";
@@ -33,7 +33,6 @@ export function clearSessionCookie(requestUrl) {
   return parts.join("; ");
 }
 
-/** Session token from cookie only (excludes Bearer). Used for CSRF decisions. */
 export function readSessionTokenFromCookie(request) {
   const cookie = request.headers.get("Cookie") || "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));
@@ -58,7 +57,7 @@ export async function createSession(db, staffUserId, requestUrl, meta = {}) {
 
   await db
     .prepare(
-      `INSERT INTO staff_sessions (staff_user_id, token_hash, expires_at, ip, user_agent)
+      `INSERT INTO staff_sessions (staff_user_id, token_hash, expires_at, ip_address, user_agent)
        VALUES (?, ?, ?, ?, ?)`
     )
     .bind(staffUserId, tokenHash, expiresAt, meta.ip || null, meta.userAgent || null)
@@ -79,7 +78,7 @@ export async function resolveSession(db, request) {
   const row = await db
     .prepare(
       `SELECT s.id AS session_id, s.expires_at, s.revoked_at,
-              u.id, u.username, u.display_name, u.role, u.active
+              u.id, u.username, u.full_name, u.role, u.is_active, u.email, u.phone
        FROM staff_sessions s
        INNER JOIN staff_users u ON u.id = s.staff_user_id
        WHERE s.token_hash = ?
@@ -91,23 +90,28 @@ export async function resolveSession(db, request) {
   if (!row) return null;
   if (row.revoked_at) return null;
   if (new Date(row.expires_at).getTime() <= Date.now()) return null;
-  if (!row.active) return null;
+  if (!row.is_active) return null;
 
   return {
     sessionId: row.session_id,
     staff: {
       id: row.id,
       username: row.username,
-      display_name: row.display_name,
+      display_name: row.full_name,
+      full_name: row.full_name,
       role: row.role,
-      active: row.active
+      active: Boolean(row.is_active),
+      email: row.email ?? null,
+      phone: row.phone ?? null
     }
   };
 }
 
 export async function revokeSession(db, sessionId) {
   await db
-    .prepare(`UPDATE staff_sessions SET revoked_at = datetime('now') WHERE id = ? AND revoked_at IS NULL`)
+    .prepare(
+      `UPDATE staff_sessions SET revoked_at = datetime('now') WHERE id = ? AND revoked_at IS NULL`
+    )
     .bind(sessionId)
     .run();
 }
