@@ -1,26 +1,27 @@
-# Staff authentication schema (Phase 2) — production readiness
+# Staff authentication schema (Phase 2)
 
 ## Production inspection required
 
-This environment **cannot** authenticate to Cloudflare D1. Do **not** treat `CREATE TABLE IF NOT EXISTS` as proof that production is compatible.
+Do **not** claim live compatibility without running against production D1:
 
-Before applying any migration to production:
-
-```bash
-npx wrangler d1 execute fedok144-db --remote --command "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;"
-npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(staff_users);"
-npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(staff_sessions);"
-npx wrangler d1 execute fedok144-db --remote --command "PRAGMA table_info(audit_logs);"
+```sql
+SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
+PRAGMA table_info(staff_users);
+PRAGMA table_info(staff_sessions);
+PRAGMA table_info(audit_logs);
+PRAGMA table_info(login_attempts);
+PRAGMA table_info(staff); -- legacy, if present
+SELECT * FROM schema_migrations;
 ```
 
-If tables exist with different columns, **stop** and design an additive ALTER migration. Do not drop data.
+Use `inspectAuthSchema(db)` in `src/lib/schemaCheck.js` from a Worker script if preferred.
 
-Runtime helper: `inspectAuthSchema(env.DB)` in `src/lib/schemaCheck.js`.
+`CREATE TABLE IF NOT EXISTS` will **not** fix incompatible existing tables — it only skips creation. `schema_migrations` insert does **not** prove column compatibility.
 
 ## Expected columns (auth code)
 
 ### staff_users
-id, username (UNIQUE NOCASE), display_name, role (`manager|receptionist|kitchen`), password_hash, active (0|1), created_at, updated_at, last_login_at
+id, username (UNIQUE NOCASE), display_name, role CHECK (manager|receptionist|kitchen), password_hash, active CHECK (0|1), created_at, updated_at, last_login_at
 
 ### staff_sessions
 id, staff_user_id, token_hash (UNIQUE), expires_at, revoked_at, created_at, ip, user_agent
@@ -29,26 +30,16 @@ id, staff_user_id, token_hash (UNIQUE), expires_at, revoked_at, created_at, ip, 
 id, actor_staff_id, action, target_type, target_id, metadata_json, ip, created_at
 
 ### login_attempts
-id, username_key, ip, success (0|1), attempted_at
+id, username_key, ip, success, attempted_at
 
-### schema_migrations
-id, applied_at, notes
+## Migration file
 
-Legacy repo table `staff` (pin_hash, admin role) is **not** used by this API.
-
-## Username rules
-- 3–32 chars, lowercase after normalize
-- Must start with a letter: `^[a-z][a-z0-9._-]*$`
-- No spaces
-
-## Password hashing
-- Format: `pbkdf2$v1$120000$<saltHex>$<hashHex>`
-- Web Crypto PBKDF2-SHA-256, 120k iterations (Workers CPU trade-off; not argon2id)
-- Legacy `pbkdf2$iters$salt$hash` still verifies
-
-## Apply migration (only after inspection)
+`migrations/001_staff_auth.sql` — additive only. Apply only after inspection:
 
 ```bash
-cd worker
 npx wrangler d1 execute fedok144-db --remote --file=./migrations/001_staff_auth.sql
 ```
+
+## Cookie / domain note
+
+Pages origin `https://fedokhotel.pages.dev` and Worker `*.workers.dev` are **cross-site**. Cookie auth uses `SameSite=None; Secure`. Safari ITP / some mobile browsers may block third-party cookies. Prefer a same-site custom domain (e.g. `api.fedokhotel...` under the same eTLD+1) for reliable cookie sessions; Bearer tokens remain supported.

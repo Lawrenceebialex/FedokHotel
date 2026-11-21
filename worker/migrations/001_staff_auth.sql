@@ -3,7 +3,7 @@
 -- Expected columns are documented in SCHEMA_AUTH.md.
 -- This file only uses CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS.
 -- It does NOT ALTER existing tables. If production tables exist with different
--- columns, apply a separate additive ALTER migration only after inspection.
+-- columns, apply a separate compat migration only after inspection.
 
 CREATE TABLE IF NOT EXISTS schema_migrations (
   id TEXT PRIMARY KEY,
