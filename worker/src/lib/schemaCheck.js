@@ -5,8 +5,8 @@
 
 const REQUIRED = {
   staff_users: [
-    "id", "username", "display_name", "role", "password_hash", "active",
-    "created_at", "updated_at", "last_login_at"
+    "id", "username", "display_name", "role", "password_hash",
+    "active", "created_at", "updated_at", "last_login_at"
   ],
   staff_sessions: [
     "id", "staff_user_id", "token_hash", "expires_at", "revoked_at",

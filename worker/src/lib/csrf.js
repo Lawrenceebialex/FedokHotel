@@ -1,11 +1,17 @@
 /**
  * CSRF defenses for cookie-authenticated state-changing requests.
- * Cross-origin Pages → Workers is cross-site; SameSite=None cookies are sent
- * cross-site, so CORS alone is not CSRF protection.
  *
- * 1. Origin/Referer must match allow-list for cookie sessions on mutating methods.
- * 2. Double-submit: X-CSRF-Token must match fedok_csrf cookie.
- * 3. Bearer-only (no session cookie) skips double-submit; Origin still gated globally.
+ * Cross-origin Pages (fedokhotel.pages.dev) → Worker (*.workers.dev) is
+ * cross-site. SameSite=None cookies are sent on cross-site requests, so
+ * CORS alone is not CSRF protection.
+ *
+ * Strategy:
+ * 1. Require Origin (or Referer) to match the allow-list for cookie sessions
+ *    on POST/PUT/PATCH/DELETE.
+ * 2. Optionally accept X-CSRF-Token matching a double-submit cookie value
+ *    (fedok_csrf) when present.
+ * 3. Bearer-token auth is treated as non-cookie; Origin still validated when
+ *    present via global CORS gate.
  */
 
 import { ALLOWED_ORIGINS } from "./cors.js";
@@ -19,6 +25,7 @@ export function validateCsrf(request, sessionTokenFromCookie) {
   }
 
   const usingCookieSession = Boolean(sessionTokenFromCookie);
+
   const origin = request.headers.get("Origin");
   if (origin) {
     if (!ALLOWED_ORIGINS.has(origin)) {
@@ -67,13 +74,14 @@ export function createCsrfToken() {
 
 export function buildCsrfCookie(token, requestUrl) {
   const secure = requestUrl.protocol === "https:";
-  return [
+  const parts = [
     `${CSRF_COOKIE}=${token}`,
     "Path=/",
     `Max-Age=${12 * 3600}`,
     secure ? "Secure" : "",
     secure ? "SameSite=None" : "SameSite=Lax"
-  ].filter(Boolean).join("; ");
+  ].filter(Boolean);
+  return parts.join("; ");
 }
 
 export function clearCsrfCookie(requestUrl) {
@@ -84,5 +92,7 @@ export function clearCsrfCookie(requestUrl) {
     "Max-Age=0",
     secure ? "Secure" : "",
     secure ? "SameSite=None" : "SameSite=Lax"
-  ].filter(Boolean).join("; ");
+  ]
+    .filter(Boolean)
+    .join("; ");
 }

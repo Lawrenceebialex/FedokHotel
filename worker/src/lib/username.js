@@ -11,6 +11,10 @@ export const USERNAME_MIN = 3;
 export const USERNAME_MAX = 32;
 export const USERNAME_PATTERN = /^[a-z][a-z0-9._-]*$/;
 
+/**
+ * @param {unknown} raw
+ * @returns {{ ok: true, username: string } | { ok: false, message: string }}
+ */
 export function normalizeUsername(raw) {
   if (typeof raw !== "string") {
     return { ok: false, message: "Username is required." };
