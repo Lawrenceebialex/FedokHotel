@@ -1,16 +1,15 @@
-import { hashPassword, verifyPassword, validatePasswordPolicy } from "../lib/crypto.js";
-import { createSession, resolveSession, revokeSession, clearSessionCookie } from "../lib/session.js";
+import { verifyPassword } from "../lib/crypto.js";
+import {
+  createSession,
+  resolveSession,
+  revokeSession,
+  clearSessionCookie
+} from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
-import { isLoginBlocked, recordLoginAttempt } from "../lib/rateLimit.js";
+import { isLoginBlocked, recordLoginAttempt, extractClientIp } from "../lib/rateLimit.js";
 import { json, errorJson } from "../lib/response.js";
-
-function clientIp(request) {
-  return (
-    request.headers.get("CF-Connecting-IP") ||
-    request.headers.get("X-Forwarded-For")?.split(",")[0]?.trim() ||
-    null
-  );
-}
+import { normalizeUsername } from "../lib/username.js";
+import { createCsrfToken, buildCsrfCookie, clearCsrfCookie } from "../lib/csrf.js";
 
 function publicStaff(staff) {
   return {
@@ -26,18 +25,18 @@ export async function login(request, env, ctx) {
   const bodyResult = await ctx.readJsonBody(request);
   if (!bodyResult.ok) return bodyResult.response;
 
-  const username = typeof bodyResult.data?.username === "string" ? bodyResult.data.username.trim() : "";
+  const un = normalizeUsername(bodyResult.data?.username);
   const password = typeof bodyResult.data?.password === "string" ? bodyResult.data.password : "";
 
   const genericFail = () =>
     errorJson("invalid_credentials", "Invalid username or password.", 401, ctx.corsHeaders, ctx.requestId);
 
-  if (!username || !password) {
+  if (!un.ok || !password) {
     return genericFail();
   }
 
-  const usernameKey = username.toLowerCase();
-  const ip = clientIp(request);
+  const usernameKey = un.username;
+  const ip = extractClientIp(request);
 
   const blocked = await isLoginBlocked(env.DB, usernameKey, ip);
   if (blocked.blocked) {
@@ -61,7 +60,7 @@ export async function login(request, env, ctx) {
       `SELECT id, username, display_name, role, password_hash, active
        FROM staff_users WHERE username = ? COLLATE NOCASE LIMIT 1`
     )
-    .bind(username)
+    .bind(usernameKey)
     .first();
 
   if (!user || !user.active) {
@@ -109,25 +108,30 @@ export async function login(request, env, ctx) {
     ip
   });
 
-  const headers = {
-    ...ctx.corsHeaders,
-    "Set-Cookie": session.cookie
+  const csrf = createCsrfToken();
+  const body = {
+    staff: publicStaff(user),
+    expires_at: session.expiresAt,
+    csrf_token: csrf,
+    request_id: ctx.requestId
   };
 
-  return json(
-    {
-      staff: publicStaff(user),
-      expires_at: session.expiresAt
-    },
-    200,
-    headers,
-    ctx.requestId
-  );
+  const resHeaders = new Headers({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "X-Request-Id": ctx.requestId,
+    ...ctx.corsHeaders
+  });
+  resHeaders.append("Set-Cookie", session.cookie);
+  resHeaders.append("Set-Cookie", buildCsrfCookie(csrf, ctx.url));
+
+  return new Response(JSON.stringify(body), { status: 200, headers: resHeaders });
 }
 
 export async function logout(request, env, ctx) {
   const resolved = await resolveSession(env.DB, request);
-  const ip = clientIp(request);
+  const ip = extractClientIp(request);
 
   if (resolved) {
     await revokeSession(env.DB, resolved.sessionId);
@@ -140,15 +144,19 @@ export async function logout(request, env, ctx) {
     });
   }
 
-  return json(
-    { ok: true },
-    200,
-    {
-      ...ctx.corsHeaders,
-      "Set-Cookie": clearSessionCookie(ctx.url)
-    },
-    ctx.requestId
-  );
+  const resHeaders = new Headers({
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Request-Id": ctx.requestId,
+    ...ctx.corsHeaders
+  });
+  resHeaders.append("Set-Cookie", clearSessionCookie(ctx.url));
+  resHeaders.append("Set-Cookie", clearCsrfCookie(ctx.url));
+
+  return new Response(JSON.stringify({ ok: true, request_id: ctx.requestId }), {
+    status: 200,
+    headers: resHeaders
+  });
 }
 
 export async function me(request, env, ctx) {
@@ -158,5 +166,3 @@ export async function me(request, env, ctx) {
   }
   return json({ staff: publicStaff(resolved.staff) }, 200, ctx.corsHeaders, ctx.requestId);
 }
-
-export { hashPassword, validatePasswordPolicy, publicStaff };
