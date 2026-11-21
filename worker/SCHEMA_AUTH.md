@@ -1,45 +1,57 @@
-# Staff authentication schema (Phase 2)
+# Staff authentication — verified production schema (fedok144-db)
 
-## Production inspection required
+## Source of truth
 
-Do **not** claim live compatibility without running against production D1:
+Production D1 was inspected by the operator. Application code maps to these columns.
 
-```sql
-SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;
-PRAGMA table_info(staff_users);
-PRAGMA table_info(staff_sessions);
-PRAGMA table_info(audit_logs);
-PRAGMA table_info(login_attempts);
-PRAGMA table_info(staff); -- legacy, if present
-SELECT * FROM schema_migrations;
-```
+### staff_users (existing — do not recreate)
 
-Use `inspectAuthSchema(db)` in `src/lib/schemaCheck.js` from a Worker script if preferred.
+| Column | Notes |
+|--------|--------|
+| id | PK |
+| full_name | API may expose as `display_name` |
+| username | UNIQUE COLLATE NOCASE |
+| email | UNIQUE COLLATE NOCASE |
+| phone | |
+| password_hash | PBKDF2 versioned string |
+| role | CHECK (manager, receptionist, kitchen) |
+| is_active | CHECK (0,1) — API may accept `active` |
+| last_login_at, created_at, updated_at | `trg_staff_users_updated` maintains updated_at |
 
-`CREATE TABLE IF NOT EXISTS` will **not** fix incompatible existing tables — it only skips creation. `schema_migrations` insert does **not** prove column compatibility.
+### staff_sessions (existing)
 
-## Expected columns (auth code)
+id, staff_user_id, token_hash UNIQUE, expires_at, revoked_at, created_at, **ip_address**, user_agent
 
-### staff_users
-id, username (UNIQUE NOCASE), display_name, role CHECK (manager|receptionist|kitchen), password_hash, active CHECK (0|1), created_at, updated_at, last_login_at
+### audit_logs (existing)
 
-### staff_sessions
-id, staff_user_id, token_hash (UNIQUE), expires_at, revoked_at, created_at, ip, user_agent
+id, **staff_user_id**, action, **entity_type NOT NULL**, entity_id, **details**, **ip_address**, user_agent, created_at
 
-### audit_logs
-id, actor_staff_id, action, target_type, target_id, metadata_json, ip, created_at
+### Missing (migration 002)
 
-### login_attempts
-id, username_key, ip, success, attempted_at
+- `login_attempts` — rate limiting
+- `schema_migrations` — migration tracking
 
-## Migration file
+## Migration
 
-`migrations/001_staff_auth.sql` — additive only. Apply only after inspection:
+**Do not run `001_staff_auth.sql` on production.**
 
 ```bash
-npx wrangler d1 execute fedok144-db --remote --file=./migrations/001_staff_auth.sql
+npx wrangler d1 execute fedok144-db --remote --file=./migrations/002_prod_compat_missing_tables.sql
 ```
 
-## Cookie / domain note
+## Bootstrap first manager (one-time, offline)
 
-Pages origin `https://fedokhotel.pages.dev` and Worker `*.workers.dev` are **cross-site**. Cookie auth uses `SameSite=None; Secure`. Safari ITP / some mobile browsers may block third-party cookies. Prefer a same-site custom domain (e.g. `api.fedokhotel...` under the same eTLD+1) for reliable cookie sessions; Bearer tokens remain supported.
+```bash
+cd worker
+BOOTSTRAP_PASSWORD='your-secure-password' node scripts/generate-password-hash.mjs
+```
+
+Then:
+
+```sql
+INSERT INTO staff_users (full_name, username, email, phone, password_hash, role, is_active)
+SELECT 'Hotel Manager', 'admin', NULL, NULL, '<PASTE_HASH_HERE>', 'manager', 1
+WHERE NOT EXISTS (
+  SELECT 1 FROM staff_users WHERE role = 'manager' AND is_active = 1
+);
+```
