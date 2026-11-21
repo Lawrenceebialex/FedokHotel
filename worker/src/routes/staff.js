@@ -10,29 +10,30 @@ function publicStaff(row) {
   return {
     id: row.id,
     username: row.username,
-    display_name: row.display_name,
+    display_name: row.full_name,
+    full_name: row.full_name,
     role: row.role,
-    active: Boolean(row.active),
+    active: Boolean(row.is_active),
+    email: row.email ?? null,
+    phone: row.phone ?? null,
     created_at: row.created_at || undefined,
     last_login_at: row.last_login_at || null
   };
 }
 
-function stripHash(row) {
-  if (!row) return row;
-  const { password_hash, ...rest } = row;
-  return rest;
+function ua(request) {
+  return request.headers.get("User-Agent") || null;
 }
 
 async function conditionalDemoteManager(db, id, newRole) {
   const result = await db
     .prepare(
       `UPDATE staff_users
-       SET role = ?, updated_at = datetime('now')
+       SET role = ?
        WHERE id = ?
          AND role = 'manager'
-         AND active = 1
-         AND (SELECT COUNT(*) FROM staff_users WHERE role = 'manager' AND active = 1 AND id != ?) >= 1`
+         AND is_active = 1
+         AND (SELECT COUNT(*) FROM staff_users WHERE role = 'manager' AND is_active = 1 AND id != ?) >= 1`
     )
     .bind(newRole, id, id)
     .run();
@@ -43,11 +44,11 @@ async function conditionalDeactivateManager(db, id) {
   const result = await db
     .prepare(
       `UPDATE staff_users
-       SET active = 0, updated_at = datetime('now')
+       SET is_active = 0
        WHERE id = ?
          AND role = 'manager'
-         AND active = 1
-         AND (SELECT COUNT(*) FROM staff_users WHERE role = 'manager' AND active = 1 AND id != ?) >= 1`
+         AND is_active = 1
+         AND (SELECT COUNT(*) FROM staff_users WHERE role = 'manager' AND is_active = 1 AND id != ?) >= 1`
     )
     .bind(id, id)
     .run();
@@ -71,7 +72,7 @@ export async function listStaff(request, env, ctx) {
   }
   const { results } = await env.DB
     .prepare(
-      `SELECT id, username, display_name, role, active, created_at, last_login_at
+      `SELECT id, username, full_name, role, is_active, email, phone, created_at, last_login_at
        FROM staff_users ORDER BY id ASC`
     )
     .all();
@@ -90,11 +91,20 @@ export async function createStaff(request, env, ctx) {
   if (!un.ok) {
     return errorJson("validation_error", un.message, 400, ctx.corsHeaders, ctx.requestId);
   }
-  const displayName = typeof data.display_name === "string" ? data.display_name.trim() : "";
+  const fullNameRaw =
+    typeof data.full_name === "string"
+      ? data.full_name
+      : typeof data.display_name === "string"
+        ? data.display_name
+        : "";
+  const fullName = fullNameRaw.trim();
   const role = typeof data.role === "string" ? data.role.trim() : "";
   const password = typeof data.password === "string" ? data.password : "";
-  if (!displayName || displayName.length > 120) {
-    return errorJson("validation_error", "display_name is required.", 400, ctx.corsHeaders, ctx.requestId);
+  const email =
+    typeof data.email === "string" && data.email.trim() ? data.email.trim().toLowerCase() : null;
+  const phone = typeof data.phone === "string" && data.phone.trim() ? data.phone.trim() : null;
+  if (!fullName || fullName.length > 120) {
+    return errorJson("validation_error", "full_name (or display_name) is required.", 400, ctx.corsHeaders, ctx.requestId);
   }
   if (!isValidRole(role) || !assignableRoles().includes(role)) {
     return errorJson("validation_error", "Invalid role.", 400, ctx.corsHeaders, ctx.requestId);
@@ -110,15 +120,24 @@ export async function createStaff(request, env, ctx) {
   if (existing) {
     return errorJson("conflict", "Username already exists.", 409, ctx.corsHeaders, ctx.requestId);
   }
+  if (email) {
+    const emailTaken = await env.DB
+      .prepare(`SELECT id FROM staff_users WHERE email = ? COLLATE NOCASE LIMIT 1`)
+      .bind(email)
+      .first();
+    if (emailTaken) {
+      return errorJson("conflict", "Email already exists.", 409, ctx.corsHeaders, ctx.requestId);
+    }
+  }
   const passwordHash = await hashPassword(password);
   let result;
   try {
     result = await env.DB
       .prepare(
-        `INSERT INTO staff_users (username, display_name, role, password_hash, active)
-         VALUES (?, ?, ?, ?, 1)`
+        `INSERT INTO staff_users (full_name, username, email, phone, password_hash, role, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, 1)`
       )
-      .bind(un.username, displayName, role, passwordHash)
+      .bind(fullName, un.username, email, phone, passwordHash, role)
       .run();
   } catch (err) {
     console.error("create staff failed:", err);
@@ -128,18 +147,20 @@ export async function createStaff(request, env, ctx) {
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "staff.created",
-    targetType: "staff_user",
-    targetId: newId,
-    metadata: { username: un.username, role },
-    ip: extractClientIp(request)
+    entityType: "staff_user",
+    entityId: newId,
+    details: { username: un.username, role },
+    ip: extractClientIp(request),
+    userAgent: ua(request)
   });
   const created = await env.DB
     .prepare(
-      `SELECT id, username, display_name, role, active, created_at, last_login_at FROM staff_users WHERE id = ?`
+      `SELECT id, username, full_name, role, is_active, email, phone, created_at, last_login_at
+       FROM staff_users WHERE id = ?`
     )
     .bind(newId)
     .first();
-  return json({ staff: publicStaff(stripHash(created)) }, 201, ctx.corsHeaders, ctx.requestId);
+  return json({ staff: publicStaff(created) }, 201, ctx.corsHeaders, ctx.requestId);
 }
 
 export async function updateStaff(request, env, ctx) {
@@ -155,7 +176,7 @@ export async function updateStaff(request, env, ctx) {
   if (!bodyResult.ok) return bodyResult.response;
   const data = bodyResult.data || {};
   const target = await env.DB
-    .prepare(`SELECT id, username, role, active FROM staff_users WHERE id = ?`)
+    .prepare(`SELECT id, username, role, is_active FROM staff_users WHERE id = ?`)
     .bind(id)
     .first();
   if (!target) {
@@ -164,17 +185,22 @@ export async function updateStaff(request, env, ctx) {
   const meta = {};
   let roleChanged = false;
   let deactivated = false;
+  const ip = extractClientIp(request);
+  const userAgent = ua(request);
 
-  if (typeof data.display_name === "string") {
-    const dn = data.display_name.trim();
-    if (!dn || dn.length > 120) {
-      return errorJson("validation_error", "Invalid display_name.", 400, ctx.corsHeaders, ctx.requestId);
+  const nameRaw =
+    typeof data.full_name === "string"
+      ? data.full_name
+      : typeof data.display_name === "string"
+        ? data.display_name
+        : null;
+  if (nameRaw !== null) {
+    const fn = nameRaw.trim();
+    if (!fn || fn.length > 120) {
+      return errorJson("validation_error", "Invalid full_name.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    await env.DB
-      .prepare(`UPDATE staff_users SET display_name = ?, updated_at = datetime('now') WHERE id = ?`)
-      .bind(dn, id)
-      .run();
-    meta.display_name = dn;
+    await env.DB.prepare(`UPDATE staff_users SET full_name = ? WHERE id = ?`).bind(fn, id).run();
+    meta.full_name = fn;
   }
 
   if (typeof data.role === "string") {
@@ -182,42 +208,48 @@ export async function updateStaff(request, env, ctx) {
     if (!isValidRole(role)) {
       return errorJson("validation_error", "Invalid role.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    if (target.role === "manager" && role !== "manager" && Number(target.active) === 1) {
+    if (target.role === "manager" && role !== "manager" && Number(target.is_active) === 1) {
       const changes = await conditionalDemoteManager(env.DB, id, role);
       if (changes < 1) {
         return errorJson("last_manager", "Cannot demote the last active manager.", 400, ctx.corsHeaders, ctx.requestId);
       }
     } else {
-      await env.DB
-        .prepare(`UPDATE staff_users SET role = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(role, id)
-        .run();
+      await env.DB.prepare(`UPDATE staff_users SET role = ? WHERE id = ?`).bind(role, id).run();
     }
     meta.role = role;
     roleChanged = role !== target.role;
   }
 
-  if (data.active !== undefined) {
-    let active;
-    if (data.active === true || data.active === 1) active = 1;
-    else if (data.active === false || data.active === 0) active = 0;
+  if (data.active !== undefined || data.is_active !== undefined) {
+    const raw = data.active !== undefined ? data.active : data.is_active;
+    let isActive;
+    if (raw === true || raw === 1) isActive = 1;
+    else if (raw === false || raw === 0) isActive = 0;
     else {
       return errorJson("validation_error", "active must be boolean true/false or 0/1.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    if (target.role === "manager" && Number(target.active) === 1 && active === 0) {
+    if (target.role === "manager" && Number(target.is_active) === 1 && isActive === 0) {
       const changes = await conditionalDeactivateManager(env.DB, id);
       if (changes < 1) {
         return errorJson("last_manager", "Cannot deactivate the last active manager.", 400, ctx.corsHeaders, ctx.requestId);
       }
       deactivated = true;
     } else {
-      await env.DB
-        .prepare(`UPDATE staff_users SET active = ?, updated_at = datetime('now') WHERE id = ?`)
-        .bind(active, id)
-        .run();
-      if (active === 0) deactivated = true;
+      await env.DB.prepare(`UPDATE staff_users SET is_active = ? WHERE id = ?`).bind(isActive, id).run();
+      if (isActive === 0) deactivated = true;
     }
-    meta.active = active;
+    meta.is_active = isActive;
+  }
+
+  if (typeof data.email === "string") {
+    const email = data.email.trim() ? data.email.trim().toLowerCase() : null;
+    await env.DB.prepare(`UPDATE staff_users SET email = ? WHERE id = ?`).bind(email, id).run();
+    meta.email = email;
+  }
+  if (typeof data.phone === "string") {
+    const phone = data.phone.trim() || null;
+    await env.DB.prepare(`UPDATE staff_users SET phone = ? WHERE id = ?`).bind(phone, id).run();
+    meta.phone = phone;
   }
 
   if (Object.keys(meta).length === 0) {
@@ -229,25 +261,28 @@ export async function updateStaff(request, env, ctx) {
     await writeAudit(env.DB, {
       actorStaffId: auth.staff.id,
       action: "staff.sessions_revoked",
-      targetType: "staff_user",
-      targetId: id,
-      metadata: { reason: deactivated ? "deactivated" : "role_changed" },
-      ip: extractClientIp(request)
+      entityType: "staff_user",
+      entityId: id,
+      details: { reason: deactivated ? "deactivated" : "role_changed" },
+      ip,
+      userAgent
     });
   }
 
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "staff.updated",
-    targetType: "staff_user",
-    targetId: id,
-    metadata: meta,
-    ip: extractClientIp(request)
+    entityType: "staff_user",
+    entityId: id,
+    details: meta,
+    ip,
+    userAgent
   });
 
   const updated = await env.DB
     .prepare(
-      `SELECT id, username, display_name, role, active, created_at, last_login_at FROM staff_users WHERE id = ?`
+      `SELECT id, username, full_name, role, is_active, email, phone, created_at, last_login_at
+       FROM staff_users WHERE id = ?`
     )
     .bind(id)
     .first();
@@ -275,17 +310,15 @@ export async function resetPassword(request, env, ctx) {
     return errorJson("not_found", "Staff account not found.", 404, ctx.corsHeaders, ctx.requestId);
   }
   const passwordHash = await hashPassword(password);
-  await env.DB
-    .prepare(`UPDATE staff_users SET password_hash = ?, updated_at = datetime('now') WHERE id = ?`)
-    .bind(passwordHash, id)
-    .run();
+  await env.DB.prepare(`UPDATE staff_users SET password_hash = ? WHERE id = ?`).bind(passwordHash, id).run();
   await revokeUserSessions(env.DB, id);
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "staff.password_reset",
-    targetType: "staff_user",
-    targetId: id,
-    ip: extractClientIp(request)
+    entityType: "staff_user",
+    entityId: id,
+    ip: extractClientIp(request),
+    userAgent: ua(request)
   });
   return json({ ok: true }, 200, ctx.corsHeaders, ctx.requestId);
 }
