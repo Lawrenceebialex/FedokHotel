@@ -15,10 +15,17 @@ function publicStaff(staff) {
   return {
     id: staff.id,
     username: staff.username,
-    display_name: staff.display_name,
+    display_name: staff.display_name ?? staff.full_name,
+    full_name: staff.full_name ?? staff.display_name,
     role: staff.role,
-    active: Boolean(staff.active)
+    active: Boolean(staff.active ?? staff.is_active),
+    email: staff.email ?? null,
+    phone: staff.phone ?? null
   };
+}
+
+function userAgent(request) {
+  return request.headers.get("User-Agent") || null;
 }
 
 export async function login(request, env, ctx) {
@@ -37,14 +44,17 @@ export async function login(request, env, ctx) {
 
   const usernameKey = un.username;
   const ip = extractClientIp(request);
+  const ua = userAgent(request);
 
   const blocked = await isLoginBlocked(env.DB, usernameKey, ip);
   if (blocked.blocked) {
     await writeAudit(env.DB, {
       action: "auth.login_rate_limited",
-      targetType: "staff_user",
-      metadata: { username: usernameKey },
-      ip
+      entityType: "staff_user",
+      entityId: null,
+      details: { username: usernameKey },
+      ip,
+      userAgent: ua
     });
     return errorJson(
       "too_many_attempts",
@@ -57,19 +67,21 @@ export async function login(request, env, ctx) {
 
   const user = await env.DB
     .prepare(
-      `SELECT id, username, display_name, role, password_hash, active
+      `SELECT id, username, full_name, role, password_hash, is_active, email, phone
        FROM staff_users WHERE username = ? COLLATE NOCASE LIMIT 1`
     )
     .bind(usernameKey)
     .first();
 
-  if (!user || !user.active) {
+  if (!user || !user.is_active) {
     await recordLoginAttempt(env.DB, usernameKey, ip, false);
     await writeAudit(env.DB, {
       action: "auth.login_failed",
-      targetType: "staff_user",
-      metadata: { username: usernameKey, reason: !user ? "unknown_user" : "inactive" },
-      ip
+      entityType: "staff_user",
+      entityId: user?.id ?? null,
+      details: { username: usernameKey, reason: !user ? "unknown_user" : "inactive" },
+      ip,
+      userAgent: ua
     });
     return genericFail();
   }
@@ -80,20 +92,18 @@ export async function login(request, env, ctx) {
     await writeAudit(env.DB, {
       actorStaffId: user.id,
       action: "auth.login_failed",
-      targetType: "staff_user",
-      targetId: user.id,
-      metadata: { reason: "bad_password" },
-      ip
+      entityType: "staff_user",
+      entityId: user.id,
+      details: { reason: "bad_password" },
+      ip,
+      userAgent: ua
     });
     return genericFail();
   }
 
   await recordLoginAttempt(env.DB, usernameKey, ip, true);
 
-  const session = await createSession(env.DB, user.id, ctx.url, {
-    ip,
-    userAgent: request.headers.get("User-Agent") || null
-  });
+  const session = await createSession(env.DB, user.id, ctx.url, { ip, userAgent: ua });
 
   await env.DB
     .prepare(`UPDATE staff_users SET last_login_at = datetime('now') WHERE id = ?`)
@@ -103,14 +113,19 @@ export async function login(request, env, ctx) {
   await writeAudit(env.DB, {
     actorStaffId: user.id,
     action: "auth.login_success",
-    targetType: "staff_user",
-    targetId: user.id,
-    ip
+    entityType: "staff_user",
+    entityId: user.id,
+    ip,
+    userAgent: ua
   });
 
   const csrf = createCsrfToken();
   const body = {
-    staff: publicStaff(user),
+    staff: publicStaff({
+      ...user,
+      display_name: user.full_name,
+      active: user.is_active
+    }),
     expires_at: session.expiresAt,
     csrf_token: csrf,
     request_id: ctx.requestId
@@ -132,15 +147,17 @@ export async function login(request, env, ctx) {
 export async function logout(request, env, ctx) {
   const resolved = await resolveSession(env.DB, request);
   const ip = extractClientIp(request);
+  const ua = userAgent(request);
 
   if (resolved) {
     await revokeSession(env.DB, resolved.sessionId);
     await writeAudit(env.DB, {
       actorStaffId: resolved.staff.id,
       action: "auth.logout",
-      targetType: "staff_session",
-      targetId: resolved.sessionId,
-      ip
+      entityType: "staff_session",
+      entityId: resolved.sessionId,
+      ip,
+      userAgent: ua
     });
   }
 
