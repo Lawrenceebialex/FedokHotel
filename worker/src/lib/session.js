@@ -33,10 +33,17 @@ export function clearSessionCookie(requestUrl) {
   return parts.join("; ");
 }
 
-export function readSessionToken(request) {
+/** Session token from cookie only (excludes Bearer). Used for CSRF decisions. */
+export function readSessionTokenFromCookie(request) {
   const cookie = request.headers.get("Cookie") || "";
   const match = cookie.match(new RegExp(`(?:^|;\\s*)${COOKIE_NAME}=([^;]+)`));
   if (match) return decodeURIComponent(match[1]);
+  return null;
+}
+
+export function readSessionToken(request) {
+  const fromCookie = readSessionTokenFromCookie(request);
+  if (fromCookie) return fromCookie;
   const auth = request.headers.get("Authorization") || "";
   if (auth.toLowerCase().startsWith("bearer ")) {
     return auth.slice(7).trim() || null;
