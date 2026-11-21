@@ -1,6 +1,5 @@
 /**
- * Fedok 144 Suites API
- * Phase 1 foundation + Phase 2 staff authentication
+ * Fedok 144 Suites API — Phase 1 + Phase 2 (production-readiness corrections)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -8,6 +7,8 @@ import { createRequestId, json, errorJson, securityHeaders } from "./lib/respons
 import { checkHealth } from "./lib/health.js";
 import { matchRoute } from "./lib/router.js";
 import { readJsonBody } from "./lib/request.js";
+import { validateCsrf } from "./lib/csrf.js";
+import { readSessionTokenFromCookie } from "./lib/session.js";
 import * as authRoutes from "./routes/auth.js";
 import * as staffRoutes from "./routes/staff.js";
 
@@ -29,6 +30,8 @@ const routes = [
   { method: "PATCH", path: "/api/staff/:id", handler: staffRoutes.updateStaff },
   { method: "POST", path: "/api/staff/:id/password-reset", handler: staffRoutes.resetPassword }
 ];
+
+const CSRF_EXEMPT = new Set(["/api/auth/login"]);
 
 export default {
   async fetch(request, env, _executionContext) {
@@ -63,6 +66,14 @@ export default {
 
     const url = new URL(request.url);
     const pathname = url.pathname.replace(/\/+$/, "") || "/";
+
+    if (!CSRF_EXEMPT.has(pathname)) {
+      const cookieSession = readSessionTokenFromCookie(request);
+      const csrf = validateCsrf(request, cookieSession);
+      if (!csrf.ok) {
+        return errorJson(csrf.error, csrf.message, 403, baseHeaders, requestId);
+      }
+    }
 
     const { route, params, allowedMethods, matchedPath } = matchRoute(
       routes,
