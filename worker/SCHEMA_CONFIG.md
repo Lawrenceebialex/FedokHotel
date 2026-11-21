@@ -1,26 +1,18 @@
-# Phase 3 — Hotel configuration schema
+# Phase 3 — Hotel configuration (production schema)
 
-## Source
+## Source of truth
 
-Room tables follow repository `schema.sql`. **Production was only verified for staff/auth tables.** Before applying migration 003, run PRAGMA inspection on `room_types`, `rooms`, `hotel_settings`, `bookings`.
-
-If tables exist with different columns, stop and reconcile — `IF NOT EXISTS` will not fix shape mismatches.
-
-## Expected tables
-
-### room_types
-id, slug UNIQUE, name, base_price_ngn, max_guests, description, amenities_json, sort_order, active, created_at
+### room_categories
+base_price_per_night, is_active, name, slug, …
 
 ### rooms
-id, room_type_id, room_number UNIQUE, floor, status (available|occupied|maintenance|blocked), notes
+category_id, room_number, operational_status (available|occupied|maintenance|out_of_service), is_active
 
-### hotel_settings
-key PK, value, updated_at, updated_by
+### hotel_profile
+hotel_name, phone, email, address, timezone, currency, check_in_time, check_out_time
 
-## Migration
+**Do not** create `room_types` or `hotel_settings`.
+**Do not** run deprecated `003_hotel_config.sql`.
 
-```bash
-npx wrangler d1 execute fedok144-db --remote --file=./migrations/003_hotel_config.sql
-```
-
-No seed data. Soft-deactivate only. Historical `bookings.total_ngn` never rewritten on price change.
+Soft-deactivate categories (`is_active=0`) and rooms; never hard-delete.
+Price changes do not rewrite reservation `price_per_night` / `total_amount`.
