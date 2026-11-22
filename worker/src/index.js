@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phases 1–4
+ * Fedok 144 Suites API — Phases 1–5 (menu foundation)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -17,6 +17,7 @@ import * as hotelProfile from "./routes/hotelProfile.js";
 import * as availability from "./routes/availability.js";
 import * as reservations from "./routes/reservations.js";
 import * as reception from "./routes/reception.js";
+import * as menu from "./routes/menu.js";
 
 const routes = [
   {
@@ -55,13 +56,21 @@ const routes = [
   { method: "POST", path: "/api/reservations/:id/cancel", handler: reservations.cancelReservation },
   { method: "POST", path: "/api/reception/check-in", handler: reception.checkIn },
   { method: "POST", path: "/api/reception/check-out", handler: reception.checkOut },
-  { method: "POST", path: "/api/reception/move-room", handler: reception.moveRoom }
+  { method: "POST", path: "/api/reception/move-room", handler: reception.moveRoom },
+  { method: "GET", path: "/api/public/menu", handler: menu.publicMenu },
+  { method: "GET", path: "/api/menu/categories", handler: menu.listCategories },
+  { method: "POST", path: "/api/menu/categories", handler: menu.createCategory },
+  { method: "PATCH", path: "/api/menu/categories/:id", handler: menu.updateCategory },
+  { method: "GET", path: "/api/menu/items", handler: menu.listItems },
+  { method: "POST", path: "/api/menu/items", handler: menu.createItem },
+  { method: "PATCH", path: "/api/menu/items/:id", handler: menu.updateItem }
 ];
 
 const CSRF_EXEMPT = new Set([
   "/api/auth/login",
   "/api/public/availability",
-  "/api/public/reservations"
+  "/api/public/reservations",
+  "/api/public/menu"
 ]);
 
 function isCsrfExempt(pathname) {
