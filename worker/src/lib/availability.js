@@ -1,9 +1,6 @@
 /**
- * Availability against production:
- * rooms (category_id, is_active, operational_status),
- * reservations, reservation_holds, room_allocations
- *
- * Fail closed if required schema is missing — do not treat errors as zero occupancy.
+ * Availability — production schema only.
+ * Fail closed on SQL/schema errors (never invent zero occupancy silently).
  */
 
 import { nightsBetween, isIsoDate } from "./dates.js";
@@ -42,9 +39,10 @@ export async function countAllocatedInRange(db, categoryId, checkIn, checkOut) {
          INNER JOIN reservations r ON r.id = ra.reservation_id
          WHERE r.room_category_id = ?
            AND r.status IN ('pending','confirmed','checked_in')
-           AND r.check_in_date < ?
-           AND r.check_out_date > ?
-           AND ra.released_at IS NULL`
+           AND ra.released_at IS NULL
+           AND COALESCE(ra.status, 'active') NOT IN ('released','cancelled','moved')
+           AND COALESCE(ra.start_date, r.check_in_date) < ?
+           AND COALESCE(ra.end_date, r.check_out_date) > ?`
       )
       .bind(categoryId, checkOut, checkIn)
       .first();
@@ -62,6 +60,7 @@ export async function countHoldsInRange(db, categoryId, checkIn, checkOut) {
          FROM reservation_holds
          WHERE room_category_id = ?
            AND expires_at > datetime('now')
+           AND COALESCE(status, 'active') IN ('active','held','pending')
            AND check_in_date < ?
            AND check_out_date > ?`
       )
@@ -87,6 +86,7 @@ export async function countUnallocatedReservations(db, categoryId, checkIn, chec
              SELECT 1 FROM room_allocations ra
              WHERE ra.reservation_id = r.id
                AND ra.released_at IS NULL
+               AND COALESCE(ra.status, 'active') NOT IN ('released','cancelled','moved')
            )`
       )
       .bind(categoryId, checkOut, checkIn)
