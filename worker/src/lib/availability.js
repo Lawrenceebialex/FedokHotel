@@ -1,6 +1,8 @@
 /**
- * Availability — production schema only.
- * Fail closed on SQL/schema errors (never invent zero occupancy silently).
+ * Availability — production schema.
+ * room_allocations.status: active | released only
+ * reservation_holds: status = 'active' AND expires_at > now
+ * Fail closed on SQL errors.
  */
 
 import { nightsBetween, isIsoDate } from "./dates.js";
@@ -39,8 +41,8 @@ export async function countAllocatedInRange(db, categoryId, checkIn, checkOut) {
          INNER JOIN reservations r ON r.id = ra.reservation_id
          WHERE r.room_category_id = ?
            AND r.status IN ('pending','confirmed','checked_in')
+           AND ra.status = 'active'
            AND ra.released_at IS NULL
-           AND COALESCE(ra.status, 'active') NOT IN ('released','cancelled','moved')
            AND COALESCE(ra.start_date, r.check_in_date) < ?
            AND COALESCE(ra.end_date, r.check_out_date) > ?`
       )
@@ -59,8 +61,8 @@ export async function countHoldsInRange(db, categoryId, checkIn, checkOut) {
         `SELECT COALESCE(SUM(room_count), 0) AS c
          FROM reservation_holds
          WHERE room_category_id = ?
+           AND status = 'active'
            AND expires_at > datetime('now')
-           AND COALESCE(status, 'active') IN ('active','held','pending')
            AND check_in_date < ?
            AND check_out_date > ?`
       )
@@ -85,8 +87,8 @@ export async function countUnallocatedReservations(db, categoryId, checkIn, chec
            AND NOT EXISTS (
              SELECT 1 FROM room_allocations ra
              WHERE ra.reservation_id = r.id
+               AND ra.status = 'active'
                AND ra.released_at IS NULL
-               AND COALESCE(ra.status, 'active') NOT IN ('released','cancelled','moved')
            )`
       )
       .bind(categoryId, checkOut, checkIn)
@@ -104,32 +106,22 @@ export async function checkCategoryAvailability(db, categoryId, checkIn, checkOu
   const nights = nightsBetween(checkIn, checkOut);
   if (!nights) {
     return {
-      ok: false,
-      available: 0,
-      capacity: 0,
-      used: 0,
-      nights: null,
+      ok: false, available: 0, capacity: 0, used: 0, nights: null,
       message: "check_out must be after check_in."
     };
   }
   if (!Number.isInteger(roomCount) || roomCount < 1) {
     return { ok: false, available: 0, capacity: 0, used: 0, nights, message: "Invalid room_count." };
   }
-
   const capacity = await countAssignableRooms(db, categoryId);
   const allocated = await countAllocatedInRange(db, categoryId, checkIn, checkOut);
   const holds = await countHoldsInRange(db, categoryId, checkIn, checkOut);
   const unallocated = await countUnallocatedReservations(db, categoryId, checkIn, checkOut);
-
   const used = allocated + holds + unallocated;
   const available = Math.max(0, capacity - used);
-
   return {
     ok: available >= roomCount,
-    available,
-    capacity,
-    used,
-    nights,
+    available, capacity, used, nights,
     message: available >= roomCount ? undefined : "Not enough rooms available for these dates."
   };
 }

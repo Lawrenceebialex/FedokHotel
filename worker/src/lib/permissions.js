@@ -6,19 +6,22 @@ const MATRIX = {
     "ops:management", "ops:reception", "ops:kitchen",
     "config:read", "config:write",
     "reservations:read", "reservations:write", "reservations:manage",
-    "reception:checkin", "reception:checkout", "reception:allocate"
+    "reception:checkin", "reception:checkout", "reception:allocate",
+    "menu:read", "menu:write"
   ]),
   receptionist: new Set([
     "ops:reception", "config:read",
     "reservations:read", "reservations:write",
-    "reception:checkin", "reception:checkout", "reception:allocate"
+    "reception:checkin", "reception:checkout", "reception:allocate",
+    "menu:read"
   ]),
-  kitchen: new Set(["ops:kitchen"])
+  kitchen: new Set(["ops:kitchen", "menu:read"])
 };
 
 export function can(role, permission) {
   const set = MATRIX[role];
-  return set ? set.has(permission) : false;
+  if (!set) return false;
+  return set.has(permission);
 }
 
 export function isValidRole(role) {
