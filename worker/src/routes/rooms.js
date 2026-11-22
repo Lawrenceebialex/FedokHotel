@@ -2,7 +2,7 @@ import { requireAuth } from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
 import { json, errorJson } from "../lib/response.js";
 import { extractClientIp } from "../lib/rateLimit.js";
-import { ROOM_STATUSES, isPositiveInt, mapRoom } from "../lib/configHelpers.js";
+import { OPERATIONAL_STATUSES, isPositiveInt, parseActiveFlag, mapRoom } from "../lib/configHelpers.js";
 
 function ua(request) {
   return request.headers.get("User-Agent") || null;
@@ -13,33 +13,45 @@ export async function listRooms(request, env, ctx) {
   if (!auth.ok) {
     return errorJson(auth.error, auth.message, auth.status, ctx.corsHeaders, ctx.requestId);
   }
-  const status = ctx.url.searchParams.get("status");
-  const typeId = ctx.url.searchParams.get("room_type_id");
+  const status = ctx.url.searchParams.get("operational_status") || ctx.url.searchParams.get("status");
+  const categoryId = ctx.url.searchParams.get("category_id");
+  const includeInactive = ctx.url.searchParams.get("include_inactive") === "1";
+
   let sql = `
-    SELECT r.*, rt.name AS room_type_name, rt.slug AS room_type_slug
+    SELECT r.*, c.name AS category_name, c.slug AS category_slug
     FROM rooms r
-    LEFT JOIN room_types rt ON rt.id = r.room_type_id
+    LEFT JOIN room_categories c ON c.id = r.category_id
     WHERE 1=1`;
   const binds = [];
+
+  if (!includeInactive) {
+    sql += ` AND r.is_active = 1`;
+  }
   if (status) {
-    if (!ROOM_STATUSES.includes(status)) {
-      return errorJson("validation_error", "Invalid status filter.", 400, ctx.corsHeaders, ctx.requestId);
+    if (!OPERATIONAL_STATUSES.includes(status)) {
+      return errorJson("validation_error", "Invalid operational_status.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    sql += ` AND r.status = ?`;
+    sql += ` AND r.operational_status = ?`;
     binds.push(status);
   }
-  if (typeId) {
-    const tid = Number(typeId);
-    if (!isPositiveInt(tid)) {
-      return errorJson("validation_error", "Invalid room_type_id.", 400, ctx.corsHeaders, ctx.requestId);
+  if (categoryId) {
+    const cid = Number(categoryId);
+    if (!isPositiveInt(cid)) {
+      return errorJson("validation_error", "Invalid category_id.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    sql += ` AND r.room_type_id = ?`;
-    binds.push(tid);
+    sql += ` AND r.category_id = ?`;
+    binds.push(cid);
   }
   sql += ` ORDER BY r.room_number ASC`;
-  const stmt = env.DB.prepare(sql);
-  const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
-  return json({ rooms: (results || []).map(mapRoom) }, 200, ctx.corsHeaders, ctx.requestId);
+
+  try {
+    const stmt = env.DB.prepare(sql);
+    const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
+    return json({ rooms: (results || []).map(mapRoom) }, 200, ctx.corsHeaders, ctx.requestId);
+  } catch (err) {
+    console.error("listRooms:", err);
+    return errorJson("db_error", "Could not list rooms.", 500, ctx.corsHeaders, ctx.requestId);
+  }
 }
 
 export async function getRoom(request, env, ctx) {
@@ -53,8 +65,8 @@ export async function getRoom(request, env, ctx) {
   }
   const row = await env.DB
     .prepare(
-      `SELECT r.*, rt.name AS room_type_name, rt.slug AS room_type_slug
-       FROM rooms r LEFT JOIN room_types rt ON rt.id = r.room_type_id
+      `SELECT r.*, c.name AS category_name, c.slug AS category_slug
+       FROM rooms r LEFT JOIN room_categories c ON c.id = r.category_id
        WHERE r.id = ?`
     )
     .bind(id)
@@ -73,6 +85,7 @@ export async function createRoom(request, env, ctx) {
   const bodyResult = await ctx.readJsonBody(request);
   if (!bodyResult.ok) return bodyResult.response;
   const data = bodyResult.data || {};
+
   const roomNumber =
     typeof data.room_number === "string"
       ? data.room_number.trim()
@@ -80,33 +93,39 @@ export async function createRoom(request, env, ctx) {
         ? String(data.room_number).trim()
         : "";
   if (!roomNumber || roomNumber.length > 32) {
-    return errorJson("validation_error", "room_number is required (max 32).", 400, ctx.corsHeaders, ctx.requestId);
+    return errorJson("validation_error", "room_number is required.", 400, ctx.corsHeaders, ctx.requestId);
   }
-  const roomTypeId = Number(data.room_type_id);
-  if (!isPositiveInt(roomTypeId)) {
-    return errorJson("validation_error", "room_type_id is required.", 400, ctx.corsHeaders, ctx.requestId);
+
+  const categoryId = Number(data.category_id);
+  if (!isPositiveInt(categoryId)) {
+    return errorJson("validation_error", "category_id is required.", 400, ctx.corsHeaders, ctx.requestId);
   }
-  const typeRow = await env.DB
-    .prepare(`SELECT id, active FROM room_types WHERE id = ?`)
-    .bind(roomTypeId)
+  const cat = await env.DB
+    .prepare(`SELECT id, is_active FROM room_categories WHERE id = ?`)
+    .bind(categoryId)
     .first();
-  if (!typeRow) {
-    return errorJson("validation_error", "room_type_id does not exist.", 400, ctx.corsHeaders, ctx.requestId);
+  if (!cat) {
+    return errorJson("validation_error", "category_id does not exist.", 400, ctx.corsHeaders, ctx.requestId);
   }
-  if (!typeRow.active) {
-    return errorJson("validation_error", "Cannot assign a deactivated room type.", 400, ctx.corsHeaders, ctx.requestId);
+  if (!cat.is_active) {
+    return errorJson("validation_error", "Cannot assign an inactive category.", 400, ctx.corsHeaders, ctx.requestId);
   }
+
   const floor =
     data.floor === undefined || data.floor === null ? null : Number(data.floor);
   if (floor !== null && !Number.isInteger(floor)) {
     return errorJson("validation_error", "floor must be an integer.", 400, ctx.corsHeaders, ctx.requestId);
   }
-  const status = typeof data.status === "string" ? data.status : "available";
-  if (!ROOM_STATUSES.includes(status)) {
-    return errorJson("validation_error", "Invalid status.", 400, ctx.corsHeaders, ctx.requestId);
+
+  const opStatus =
+    typeof data.operational_status === "string" ? data.operational_status : "available";
+  if (!OPERATIONAL_STATUSES.includes(opStatus)) {
+    return errorJson("validation_error", "Invalid operational_status.", 400, ctx.corsHeaders, ctx.requestId);
   }
+
   const notes =
     typeof data.notes === "string" ? data.notes.trim().slice(0, 1000) : null;
+
   const dup = await env.DB
     .prepare(`SELECT id FROM rooms WHERE room_number = ? COLLATE NOCASE LIMIT 1`)
     .bind(roomNumber)
@@ -114,33 +133,36 @@ export async function createRoom(request, env, ctx) {
   if (dup) {
     return errorJson("conflict", "room_number already exists.", 409, ctx.corsHeaders, ctx.requestId);
   }
+
   let result;
   try {
     result = await env.DB
       .prepare(
-        `INSERT INTO rooms (room_type_id, room_number, floor, status, notes)
-         VALUES (?, ?, ?, ?, ?)`
+        `INSERT INTO rooms (category_id, room_number, floor, operational_status, is_active, notes)
+         VALUES (?, ?, ?, ?, 1, ?)`
       )
-      .bind(roomTypeId, roomNumber, floor, status, notes)
+      .bind(categoryId, roomNumber, floor, opStatus, notes)
       .run();
   } catch (err) {
-    console.error("create room failed:", err);
+    console.error("createRoom:", err);
     return errorJson("conflict", "Could not create room.", 409, ctx.corsHeaders, ctx.requestId);
   }
+
   const newId = result.meta?.last_row_id;
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "config.room_created",
     entityType: "room",
     entityId: newId,
-    details: { room_number: roomNumber, room_type_id: roomTypeId, status },
+    details: { room_number: roomNumber, category_id: categoryId, operational_status: opStatus },
     ip: extractClientIp(request),
     userAgent: ua(request)
   });
+
   const row = await env.DB
     .prepare(
-      `SELECT r.*, rt.name AS room_type_name, rt.slug AS room_type_slug
-       FROM rooms r LEFT JOIN room_types rt ON rt.id = r.room_type_id WHERE r.id = ?`
+      `SELECT r.*, c.name AS category_name, c.slug AS category_slug
+       FROM rooms r LEFT JOIN room_categories c ON c.id = r.category_id WHERE r.id = ?`
     )
     .bind(newId)
     .first();
@@ -159,29 +181,34 @@ export async function updateRoom(request, env, ctx) {
   const bodyResult = await ctx.readJsonBody(request);
   if (!bodyResult.ok) return bodyResult.response;
   const data = bodyResult.data || {};
+
   const target = await env.DB.prepare(`SELECT * FROM rooms WHERE id = ?`).bind(id).first();
   if (!target) {
     return errorJson("not_found", "Room not found.", 404, ctx.corsHeaders, ctx.requestId);
   }
+
   const meta = {};
-  if (data.room_type_id !== undefined) {
-    const roomTypeId = Number(data.room_type_id);
-    if (!isPositiveInt(roomTypeId)) {
-      return errorJson("validation_error", "Invalid room_type_id.", 400, ctx.corsHeaders, ctx.requestId);
+  const sets = [];
+  const binds = [];
+
+  if (data.category_id !== undefined) {
+    const categoryId = Number(data.category_id);
+    if (!isPositiveInt(categoryId)) {
+      return errorJson("validation_error", "Invalid category_id.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    const typeRow = await env.DB
-      .prepare(`SELECT id, active FROM room_types WHERE id = ?`)
-      .bind(roomTypeId)
+    const cat = await env.DB
+      .prepare(`SELECT id, is_active FROM room_categories WHERE id = ?`)
+      .bind(categoryId)
       .first();
-    if (!typeRow) {
-      return errorJson("validation_error", "room_type_id does not exist.", 400, ctx.corsHeaders, ctx.requestId);
+    if (!cat) {
+      return errorJson("validation_error", "category_id does not exist.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    if (!typeRow.active) {
-      return errorJson("validation_error", "Cannot assign a deactivated room type.", 400, ctx.corsHeaders, ctx.requestId);
+    if (!cat.is_active) {
+      return errorJson("validation_error", "Cannot assign an inactive category.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    await env.DB.prepare(`UPDATE rooms SET room_type_id = ? WHERE id = ?`).bind(roomTypeId, id).run();
-    meta.room_type_id = roomTypeId;
+    sets.push("category_id = ?"); binds.push(categoryId); meta.category_id = categoryId;
   }
+
   if (data.room_number !== undefined) {
     const roomNumber =
       typeof data.room_number === "string"
@@ -197,33 +224,56 @@ export async function updateRoom(request, env, ctx) {
     if (dup) {
       return errorJson("conflict", "room_number already exists.", 409, ctx.corsHeaders, ctx.requestId);
     }
-    await env.DB.prepare(`UPDATE rooms SET room_number = ? WHERE id = ?`).bind(roomNumber, id).run();
-    meta.room_number = roomNumber;
+    sets.push("room_number = ?"); binds.push(roomNumber); meta.room_number = roomNumber;
   }
+
   if (data.floor !== undefined) {
     const floor = data.floor === null ? null : Number(data.floor);
     if (floor !== null && !Number.isInteger(floor)) {
-      return errorJson("validation_error", "floor must be an integer or null.", 400, ctx.corsHeaders, ctx.requestId);
+      return errorJson("validation_error", "Invalid floor.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    await env.DB.prepare(`UPDATE rooms SET floor = ? WHERE id = ?`).bind(floor, id).run();
-    meta.floor = floor;
+    sets.push("floor = ?"); binds.push(floor); meta.floor = floor;
   }
-  if (data.status !== undefined) {
-    if (typeof data.status !== "string" || !ROOM_STATUSES.includes(data.status)) {
-      return errorJson("validation_error", "Invalid status.", 400, ctx.corsHeaders, ctx.requestId);
+
+  if (data.operational_status !== undefined) {
+    if (
+      typeof data.operational_status !== "string" ||
+      !OPERATIONAL_STATUSES.includes(data.operational_status)
+    ) {
+      return errorJson("validation_error", "Invalid operational_status.", 400, ctx.corsHeaders, ctx.requestId);
     }
-    await env.DB.prepare(`UPDATE rooms SET status = ? WHERE id = ?`).bind(data.status, id).run();
-    meta.status = data.status;
+    sets.push("operational_status = ?"); binds.push(data.operational_status);
+    meta.operational_status = data.operational_status;
   }
+
+  if (data.is_active !== undefined || data.active !== undefined) {
+    const raw = data.is_active !== undefined ? data.is_active : data.active;
+    const isActive = parseActiveFlag(raw);
+    if (isActive === null) {
+      return errorJson(
+        "validation_error",
+        "is_active must be boolean true/false or 0/1.",
+        400,
+        ctx.corsHeaders,
+        ctx.requestId
+      );
+    }
+    sets.push("is_active = ?"); binds.push(isActive); meta.is_active = isActive;
+  }
+
   if (data.notes !== undefined) {
     const notes =
       typeof data.notes === "string" ? data.notes.trim().slice(0, 1000) : null;
-    await env.DB.prepare(`UPDATE rooms SET notes = ? WHERE id = ?`).bind(notes, id).run();
-    meta.notes = notes;
+    sets.push("notes = ?"); binds.push(notes); meta.notes = notes;
   }
-  if (Object.keys(meta).length === 0) {
+
+  if (!sets.length) {
     return errorJson("validation_error", "No valid fields to update.", 400, ctx.corsHeaders, ctx.requestId);
   }
+
+  binds.push(id);
+  await env.DB.prepare(`UPDATE rooms SET ${sets.join(", ")} WHERE id = ?`).bind(...binds).run();
+
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "config.room_updated",
@@ -233,10 +283,11 @@ export async function updateRoom(request, env, ctx) {
     ip: extractClientIp(request),
     userAgent: ua(request)
   });
+
   const row = await env.DB
     .prepare(
-      `SELECT r.*, rt.name AS room_type_name, rt.slug AS room_type_slug
-       FROM rooms r LEFT JOIN room_types rt ON rt.id = r.room_type_id WHERE r.id = ?`
+      `SELECT r.*, c.name AS category_name, c.slug AS category_slug
+       FROM rooms r LEFT JOIN room_categories c ON c.id = r.category_id WHERE r.id = ?`
     )
     .bind(id)
     .first();
