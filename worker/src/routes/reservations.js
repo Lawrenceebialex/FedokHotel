@@ -15,25 +15,24 @@ const STAFF_SOURCES = new Set(["walkin", "phone", "manager", "ota"]);
 const PUBLIC_SOURCE = "online";
 
 async function findOrCreateGuest(db, { fullName, phone, email }) {
-  if (phone) {
+  // Only reuse when phone AND full_name match (case-insensitive). Phone alone is too weak.
+  if (phone && fullName) {
     const existing = await db
-      .prepare(`SELECT id FROM guests WHERE phone = ? COLLATE NOCASE LIMIT 1`)
+      .prepare(`SELECT id, full_name FROM guests WHERE phone = ? COLLATE NOCASE LIMIT 5`)
       .bind(phone)
-      .first();
-    if (existing) {
-      if (fullName || email) {
+      .all();
+    const rows = existing?.results || [];
+    const norm = (s) => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const match = rows.find((r) => norm(r.full_name) === norm(fullName));
+    if (match) {
+      if (email) {
         try {
-          await db
-            .prepare(
-              `UPDATE guests SET full_name = COALESCE(?, full_name), email = COALESCE(?, email) WHERE id = ?`
-            )
-            .bind(fullName || null, email || null, existing.id)
-            .run();
+          await db.prepare(`UPDATE guests SET email = COALESCE(?, email) WHERE id = ?`).bind(email, match.id).run();
         } catch (err) {
-          console.error("guest update:", err);
+          console.error("guest email update:", err);
         }
       }
-      return existing.id;
+      return match.id;
     }
   }
   const result = await db
@@ -43,17 +42,27 @@ async function findOrCreateGuest(db, { fullName, phone, email }) {
   return result.meta?.last_row_id;
 }
 
-async function insertHistory(db, reservationId, action, details, actorStaffId) {
+async function insertHistory(db, reservationId, action, { oldValues = null, newValues = null, reason = null } = {}, changedBy = null) {
   try {
     await db
       .prepare(
-        `INSERT INTO reservation_history (reservation_id, action, details, staff_user_id, created_at)
-         VALUES (?, ?, ?, ?, datetime('now'))`
+        `INSERT INTO reservation_history
+          (reservation_id, action, old_values, new_values, reason, changed_by)
+         VALUES (?, ?, ?, ?, ?, ?)`
       )
-      .bind(reservationId, action, details ? JSON.stringify(details) : null, actorStaffId || null)
+      .bind(
+        reservationId,
+        action,
+        oldValues != null ? JSON.stringify(oldValues) : null,
+        newValues != null ? JSON.stringify(newValues) : null,
+        reason,
+        changedBy
+      )
       .run();
   } catch (err) {
     console.error("reservation_history write failed:", err);
+    err.code = err.code || "schema_error";
+    throw err;
   }
 }
 
@@ -187,7 +196,11 @@ async function createReservationCore(env, ctx, request, {
   }
 
   const resId = insertResult.meta?.last_row_id;
-  await insertHistory(env.DB, resId, "created", { source, reference }, actorStaffId);
+  try {
+    await insertHistory(env.DB, resId, "created", { newValues: { source, reference } }, actorStaffId);
+  } catch (err) {
+    console.error("history after create:", err);
+  }
   await writeAudit(env.DB, {
     actorStaffId: actorStaffId || null,
     action: "reservation.created",
@@ -275,7 +288,6 @@ export async function listReservations(request, env, ctx) {
   const from = sp.get("from");
   const to = sp.get("to");
   const reference = sp.get("reference") || sp.get("booking_reference");
-
   let sql = `
     SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, g.email AS guest_email,
            c.name AS category_name
@@ -284,24 +296,11 @@ export async function listReservations(request, env, ctx) {
     LEFT JOIN room_categories c ON c.id = r.room_category_id
     WHERE 1=1`;
   const binds = [];
-  if (reference) {
-    sql += ` AND r.booking_reference = ? COLLATE NOCASE`;
-    binds.push(reference.trim());
-  }
-  if (status) {
-    sql += ` AND r.status = ?`;
-    binds.push(status);
-  }
-  if (from && isIsoDate(from)) {
-    sql += ` AND r.check_in_date >= ?`;
-    binds.push(from);
-  }
-  if (to && isIsoDate(to)) {
-    sql += ` AND r.check_in_date <= ?`;
-    binds.push(to);
-  }
+  if (reference) { sql += ` AND r.booking_reference = ? COLLATE NOCASE`; binds.push(reference.trim()); }
+  if (status) { sql += ` AND r.status = ?`; binds.push(status); }
+  if (from && isIsoDate(from)) { sql += ` AND r.check_in_date >= ?`; binds.push(from); }
+  if (to && isIsoDate(to)) { sql += ` AND r.check_in_date <= ?`; binds.push(to); }
   sql += ` ORDER BY r.check_in_date DESC, r.id DESC LIMIT 200`;
-
   try {
     const stmt = env.DB.prepare(sql);
     const { results } = binds.length ? await stmt.bind(...binds).all() : await stmt.all();
@@ -321,51 +320,32 @@ export async function getReservation(request, env, ctx) {
   if (!key) {
     return errorJson("validation_error", "Missing id.", 400, ctx.corsHeaders, ctx.requestId);
   }
-
   let row;
   if (/^\d+$/.test(key)) {
-    row = await env.DB
-      .prepare(
-        `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, g.email AS guest_email,
-                c.name AS category_name
-         FROM reservations r
-         LEFT JOIN guests g ON g.id = r.guest_id
-         LEFT JOIN room_categories c ON c.id = r.room_category_id
-         WHERE r.id = ?`
-      )
-      .bind(Number(key))
-      .first();
+    row = await env.DB.prepare(
+      `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, g.email AS guest_email, c.name AS category_name
+       FROM reservations r LEFT JOIN guests g ON g.id = r.guest_id
+       LEFT JOIN room_categories c ON c.id = r.room_category_id WHERE r.id = ?`
+    ).bind(Number(key)).first();
   } else {
-    row = await env.DB
-      .prepare(
-        `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, g.email AS guest_email,
-                c.name AS category_name
-         FROM reservations r
-         LEFT JOIN guests g ON g.id = r.guest_id
-         LEFT JOIN room_categories c ON c.id = r.room_category_id
-         WHERE r.booking_reference = ? COLLATE NOCASE`
-      )
-      .bind(key)
-      .first();
+    row = await env.DB.prepare(
+      `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, g.email AS guest_email, c.name AS category_name
+       FROM reservations r LEFT JOIN guests g ON g.id = r.guest_id
+       LEFT JOIN room_categories c ON c.id = r.room_category_id WHERE r.booking_reference = ? COLLATE NOCASE`
+    ).bind(key).first();
   }
   if (!row) {
     return errorJson("not_found", "Reservation not found.", 404, ctx.corsHeaders, ctx.requestId);
   }
-
   let allocations = [];
   try {
-    const { results } = await env.DB
-      .prepare(
-        `SELECT ra.*, rm.room_number FROM room_allocations ra
-         LEFT JOIN rooms rm ON rm.id = ra.room_id WHERE ra.reservation_id = ?`
-      )
-      .bind(row.id)
-      .all();
+    const { results } = await env.DB.prepare(
+      `SELECT ra.*, rm.room_number FROM room_allocations ra LEFT JOIN rooms rm ON rm.id = ra.room_id WHERE ra.reservation_id = ?`
+    ).bind(row.id).all();
     allocations = results || [];
   } catch (err) {
     console.error("allocations query:", err);
   }
-
   return json({ reservation: mapReservation(row), allocations }, 200, ctx.corsHeaders, ctx.requestId);
 }
 
@@ -374,17 +354,13 @@ export async function publicLookup(request, env, ctx) {
   if (!ref) {
     return errorJson("validation_error", "Missing reference.", 400, ctx.corsHeaders, ctx.requestId);
   }
-  const row = await env.DB
-    .prepare(
-      `SELECT r.booking_reference, r.check_in_date, r.check_out_date, r.nights,
-              r.room_count, r.status, r.payment_status, r.total_amount,
-              c.name AS category_name
-       FROM reservations r
-       LEFT JOIN room_categories c ON c.id = r.room_category_id
-       WHERE r.booking_reference = ? COLLATE NOCASE`
-    )
-    .bind(ref)
-    .first();
+  const row = await env.DB.prepare(
+    `SELECT r.booking_reference, r.check_in_date, r.check_out_date, r.nights,
+            r.room_count, r.status, r.payment_status, r.total_amount,
+            c.name AS category_name
+     FROM reservations r LEFT JOIN room_categories c ON c.id = r.room_category_id
+     WHERE r.booking_reference = ? COLLATE NOCASE`
+  ).bind(ref).first();
   if (!row) {
     return errorJson("not_found", "Reservation not found.", 404, ctx.corsHeaders, ctx.requestId);
   }
@@ -403,7 +379,6 @@ export async function updateReservation(request, env, ctx) {
   const bodyResult = await ctx.readJsonBody(request);
   if (!bodyResult.ok) return bodyResult.response;
   const data = bodyResult.data || {};
-
   const existing = await env.DB.prepare(`SELECT * FROM reservations WHERE id = ?`).bind(id).first();
   if (!existing) {
     return errorJson("not_found", "Reservation not found.", 404, ctx.corsHeaders, ctx.requestId);
@@ -411,11 +386,9 @@ export async function updateReservation(request, env, ctx) {
   if (existing.status === "cancelled" || existing.status === "checked_out") {
     return errorJson("conflict", `Cannot modify a ${existing.status} reservation.`, 409, ctx.corsHeaders, ctx.requestId);
   }
-
   const meta = {};
   const sets = [];
   const binds = [];
-
   if (data.status !== undefined) {
     const allowed = ["pending", "confirmed", "cancelled", "no_show"];
     if (typeof data.status !== "string" || !allowed.includes(data.status)) {
@@ -423,12 +396,10 @@ export async function updateReservation(request, env, ctx) {
     }
     sets.push("status = ?"); binds.push(data.status); meta.status = data.status;
   }
-
   if (data.notes !== undefined) {
     const notes = typeof data.notes === "string" ? data.notes.trim().slice(0, 1000) : null;
     sets.push("notes = ?"); binds.push(notes); meta.notes = notes;
   }
-
   if (data.check_in_date || data.check_out_date) {
     const checkIn = data.check_in_date || existing.check_in_date;
     const checkOut = data.check_out_date || existing.check_out_date;
@@ -440,20 +411,18 @@ export async function updateReservation(request, env, ctx) {
     binds.push(checkIn, checkOut, nights);
     const total = Number(existing.price_per_night) * nights * Number(existing.room_count);
     sets.push("total_amount = ?"); binds.push(total);
-    meta.check_in_date = checkIn;
-    meta.check_out_date = checkOut;
-    meta.nights = nights;
-    meta.total_amount = total;
+    meta.check_in_date = checkIn; meta.check_out_date = checkOut; meta.nights = nights; meta.total_amount = total;
   }
-
   if (!sets.length) {
     return errorJson("validation_error", "No valid fields.", 400, ctx.corsHeaders, ctx.requestId);
   }
-
   binds.push(id);
   await env.DB.prepare(`UPDATE reservations SET ${sets.join(", ")} WHERE id = ?`).bind(...binds).run();
-
-  await insertHistory(env.DB, id, "updated", meta, auth.staff.id);
+  try {
+    await insertHistory(env.DB, id, "updated", { newValues: meta, reason: "staff update" }, auth.staff.id);
+  } catch (err) {
+    console.error("history update:", err);
+  }
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "reservation.updated",
@@ -463,17 +432,11 @@ export async function updateReservation(request, env, ctx) {
     ip: extractClientIp(request),
     userAgent: ua(request)
   });
-
-  const row = await env.DB
-    .prepare(
-      `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, c.name AS category_name
-       FROM reservations r
-       LEFT JOIN guests g ON g.id = r.guest_id
-       LEFT JOIN room_categories c ON c.id = r.room_category_id
-       WHERE r.id = ?`
-    )
-    .bind(id)
-    .first();
+  const row = await env.DB.prepare(
+    `SELECT r.*, g.full_name AS guest_name, g.phone AS guest_phone, c.name AS category_name
+     FROM reservations r LEFT JOIN guests g ON g.id = r.guest_id
+     LEFT JOIN room_categories c ON c.id = r.room_category_id WHERE r.id = ?`
+  ).bind(id).first();
   return json({ reservation: mapReservation(row) }, 200, ctx.corsHeaders, ctx.requestId);
 }
 
@@ -496,22 +459,20 @@ export async function cancelReservation(request, env, ctx) {
   if (existing.status === "cancelled") {
     return json({ reservation: mapReservation(existing) }, 200, ctx.corsHeaders, ctx.requestId);
   }
-
   await env.DB.prepare(`UPDATE reservations SET status = 'cancelled' WHERE id = ?`).bind(id).run();
-
   try {
-    await env.DB
-      .prepare(
-        `UPDATE room_allocations SET released_at = datetime('now')
-         WHERE reservation_id = ? AND released_at IS NULL`
-      )
-      .bind(id)
-      .run();
+    await env.DB.prepare(
+      `UPDATE room_allocations SET released_at = datetime('now'), status = 'released'
+       WHERE reservation_id = ? AND released_at IS NULL`
+    ).bind(id).run();
   } catch (err) {
     console.error("cancel release allocations:", err);
   }
-
-  await insertHistory(env.DB, id, "cancelled", {}, auth.staff.id);
+  try {
+    await insertHistory(env.DB, id, "cancelled", { newValues: { status: "cancelled" }, reason: "cancelled by staff" }, auth.staff.id);
+  } catch (err) {
+    console.error("history cancel:", err);
+  }
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
     action: "reservation.cancelled",
@@ -521,7 +482,6 @@ export async function cancelReservation(request, env, ctx) {
     ip: extractClientIp(request),
     userAgent: ua(request)
   });
-
   const row = await env.DB.prepare(`SELECT * FROM reservations WHERE id = ?`).bind(id).first();
   return json({ reservation: mapReservation(row) }, 200, ctx.corsHeaders, ctx.requestId);
 }
