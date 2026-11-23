@@ -1,14 +1,8 @@
 /**
- * Room service ordering against production tables.
- *
- * ASSUMED columns (confirm with PRAGMA — not fully supplied in assignment text):
- * room_service_orders:
- *   id, stay_id, reservation_id, room_id, status, total_amount,
- *   special_instructions, created_at, updated_at
- *   status: received | preparing | ready | delivered | cancelled
- * room_service_order_items:
- *   id, order_id, menu_item_id, item_name, unit_price, quantity, line_total, notes
- * guest_access_tokens: token_hash, stay_id, reservation_id, expires_at, revoked_at
+ * Room service — verified production schema.
+ * status: pending|accepted|preparing|ready|delivered|cancelled
+ * order_source: guest_qr|reception|staff
+ * payment_status: unpaid|charged_to_folio|paid|refunded (this phase keeps unpaid)
  */
 import { requireAuth } from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
@@ -16,33 +10,47 @@ import { json, errorJson } from "../lib/response.js";
 import { extractClientIp } from "../lib/rateLimit.js";
 import { isPositiveInt } from "../lib/configHelpers.js";
 import { resolveGuestAccess } from "../lib/guestAccess.js";
+import { generateOrderReference } from "../lib/orderRef.js";
 
 function ua(request) {
   return request.headers.get("User-Agent") || null;
 }
 
-const ORDER_STATUSES = Object.freeze(["received", "preparing", "ready", "delivered", "cancelled"]);
+const ORDER_STATUSES = Object.freeze([
+  "pending", "accepted", "preparing", "ready", "delivered", "cancelled"
+]);
 
 const KITCHEN_TRANSITIONS = Object.freeze({
-  received: ["preparing", "cancelled"],
+  pending: ["accepted", "cancelled"],
+  accepted: ["preparing", "cancelled"],
   preparing: ["ready", "cancelled"],
   ready: ["delivered", "cancelled"],
   delivered: [],
   cancelled: []
 });
 
+const ORDER_SOURCES = Object.freeze(["guest_qr", "reception", "staff"]);
+
 function mapOrder(row) {
   if (!row) return null;
   return {
     id: row.id,
+    order_reference: row.order_reference,
     stay_id: row.stay_id,
-    reservation_id: row.reservation_id,
+    guest_id: row.guest_id,
     room_id: row.room_id,
+    order_source: row.order_source,
     status: row.status,
+    payment_status: row.payment_status,
+    subtotal: row.subtotal,
+    discount_amount: row.discount_amount,
     total_amount: row.total_amount,
-    special_instructions: row.special_instructions || null,
+    guest_note: row.guest_note || null,
+    kitchen_note: row.kitchen_note || null,
+    posted_to_folio: Boolean(row.posted_to_folio),
     created_at: row.created_at || null,
-    updated_at: row.updated_at || null
+    updated_at: row.updated_at || null,
+    delivered_at: row.delivered_at || null
   };
 }
 
@@ -53,10 +61,11 @@ function mapItem(row) {
     order_id: row.order_id,
     menu_item_id: row.menu_item_id,
     item_name: row.item_name,
-    unit_price: row.unit_price,
     quantity: row.quantity,
+    unit_price: row.unit_price,
     line_total: row.line_total,
-    notes: row.notes || null
+    special_instructions: row.special_instructions || null,
+    created_at: row.created_at || null
   };
 }
 
@@ -88,7 +97,7 @@ async function buildLines(db, rawItems) {
     return { ok: false, error: "validation_error", message: "Too many line items." };
   }
   const lines = [];
-  let total = 0;
+  let subtotal = 0;
   for (const raw of rawItems) {
     const menuItemId = Number(raw.menu_item_id);
     const quantity = Number(raw.quantity);
@@ -118,24 +127,30 @@ async function buildLines(db, rawItems) {
       return { ok: false, error: "schema_error", message: "Invalid menu price in database." };
     }
     const lineTotal = unitPrice * quantity;
-    total += lineTotal;
-    const notes = typeof raw.notes === "string" ? raw.notes.trim().slice(0, 200) : null;
+    subtotal += lineTotal;
+    const specialInstructions =
+      typeof raw.special_instructions === "string"
+        ? raw.special_instructions.trim().slice(0, 300)
+        : typeof raw.notes === "string"
+          ? raw.notes.trim().slice(0, 300)
+          : null;
     lines.push({
       menu_item_id: menuItemId,
       item_name: item.name,
       unit_price: unitPrice,
       quantity,
       line_total: lineTotal,
-      notes
+      special_instructions: specialInstructions
     });
   }
-  return { ok: true, lines, total };
+  return { ok: true, lines, subtotal };
 }
 
 export async function createOrder(request, env, ctx, { mode }) {
   let stayId = null;
-  let reservationId = null;
+  let guestId = null;
   let roomId = null;
+  let orderSource = "staff";
   let actorStaffId = null;
 
   if (mode === "guest") {
@@ -144,14 +159,15 @@ export async function createOrder(request, env, ctx, { mode }) {
       return errorJson(guestAccess.error, guestAccess.message, guestAccess.status, ctx.corsHeaders, ctx.requestId);
     }
     stayId = guestAccess.stayId;
-    reservationId = guestAccess.reservationId;
+    guestId = guestAccess.guestId;
     if (!stayId) {
-      return errorJson("forbidden", "Guest token is not linked to an active stay.", 403, ctx.corsHeaders, ctx.requestId);
+      return errorJson("forbidden", "Guest token is not linked to a stay.", 403, ctx.corsHeaders, ctx.requestId);
     }
     if (!guestAccess.stay || guestAccess.stay.status !== "checked_in") {
       return errorJson("conflict", "Room service is only available for checked-in stays.", 409, ctx.corsHeaders, ctx.requestId);
     }
     roomId = await activeRoomForStay(env.DB, stayId);
+    orderSource = "guest_qr";
   } else {
     const auth = await requireAuth(env.DB, request, "orders:write");
     if (!auth.ok) return errorJson(auth.error, auth.message, auth.status, ctx.corsHeaders, ctx.requestId);
@@ -168,8 +184,10 @@ export async function createOrder(request, env, ctx, { mode }) {
     if (stay.status !== "checked_in") {
       return errorJson("conflict", "Room service is only available for checked-in stays.", 409, ctx.corsHeaders, ctx.requestId);
     }
-    reservationId = stay.reservation_id;
+    guestId = stay.guest_id;
     roomId = Number(request._parsedBody.room_id) || (await activeRoomForStay(env.DB, stayId));
+    const src = request._parsedBody.order_source;
+    orderSource = ORDER_SOURCES.includes(src) ? src : "reception";
   }
 
   let data;
@@ -184,34 +202,48 @@ export async function createOrder(request, env, ctx, { mode }) {
   if (!built.ok) {
     return errorJson(built.error, built.message, built.error === "unavailable" ? 409 : 400, ctx.corsHeaders, ctx.requestId);
   }
-  const special = typeof data.special_instructions === "string" ? data.special_instructions.trim().slice(0, 500) : null;
 
-  let orderId;
-  try {
-    const insert = await env.DB
-      .prepare(
-        `INSERT INTO room_service_orders
-          (stay_id, reservation_id, room_id, status, total_amount, special_instructions)
-         VALUES (?, ?, ?, 'received', ?, ?)`
-      )
-      .bind(stayId, reservationId, roomId, built.total, special)
-      .run();
-    orderId = insert.meta?.last_row_id;
-    if (!orderId) return errorJson("db_error", "Order insert did not return id.", 500, ctx.corsHeaders, ctx.requestId);
-  } catch (err) {
-    console.error("room_service_orders insert:", err);
-    return errorJson("schema_error", "Could not create order (schema mismatch on room_service_orders).", 500, ctx.corsHeaders, ctx.requestId);
+  const guestNote = typeof data.guest_note === "string" ? data.guest_note.trim().slice(0, 500) : null;
+  const discountAmount = 0;
+  const totalAmount = built.subtotal - discountAmount;
+
+  let orderId = null;
+  let orderReference = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    orderReference = generateOrderReference();
+    try {
+      const insert = await env.DB
+        .prepare(
+          `INSERT INTO room_service_orders (
+             order_reference, stay_id, guest_id, room_id, order_source,
+             status, payment_status, subtotal, discount_amount, total_amount,
+             guest_note, kitchen_note, posted_to_folio
+           ) VALUES (?, ?, ?, ?, ?, 'pending', 'unpaid', ?, ?, ?, ?, NULL, 0)`
+        )
+        .bind(orderReference, stayId, guestId, roomId, orderSource, built.subtotal, discountAmount, totalAmount, guestNote)
+        .run();
+      orderId = insert.meta?.last_row_id;
+      if (orderId) break;
+    } catch (err) {
+      const msg = String(err?.message || err);
+      if (msg.includes("UNIQUE") || msg.includes("unique")) continue;
+      console.error("room_service_orders insert:", err);
+      return errorJson("schema_error", "Could not create order (schema mismatch).", 500, ctx.corsHeaders, ctx.requestId);
+    }
+  }
+  if (!orderId) {
+    return errorJson("conflict", "Could not allocate order reference.", 409, ctx.corsHeaders, ctx.requestId);
   }
 
   try {
     const stmts = built.lines.map((line) =>
       env.DB
         .prepare(
-          `INSERT INTO room_service_order_items
-            (order_id, menu_item_id, item_name, unit_price, quantity, line_total, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`
+          `INSERT INTO room_service_order_items (
+             order_id, menu_item_id, item_name, quantity, unit_price, line_total, special_instructions
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
-        .bind(orderId, line.menu_item_id, line.item_name, line.unit_price, line.quantity, line.line_total, line.notes)
+        .bind(orderId, line.menu_item_id, line.item_name, line.quantity, line.unit_price, line.line_total, line.special_instructions)
     );
     await env.DB.batch(stmts);
   } catch (err) {
@@ -219,7 +251,7 @@ export async function createOrder(request, env, ctx, { mode }) {
     try {
       await env.DB.prepare(`UPDATE room_service_orders SET status = 'cancelled' WHERE id = ?`).bind(orderId).run();
     } catch (_) {}
-    return errorJson("schema_error", "Could not create order items (schema mismatch).", 500, ctx.corsHeaders, ctx.requestId);
+    return errorJson("schema_error", "Could not create order items.", 500, ctx.corsHeaders, ctx.requestId);
   }
 
   await writeAudit(env.DB, {
@@ -227,7 +259,7 @@ export async function createOrder(request, env, ctx, { mode }) {
     action: "room_service.order_created",
     entityType: "room_service_order",
     entityId: orderId,
-    details: { stay_id: stayId, total_amount: built.total, item_count: built.lines.length, mode },
+    details: { order_reference: orderReference, stay_id: stayId, total_amount: totalAmount, order_source: orderSource },
     ip: extractClientIp(request),
     userAgent: ua(request)
   });
@@ -254,10 +286,7 @@ export async function guestGetOrder(request, env, ctx) {
   if (!isPositiveInt(id)) return errorJson("validation_error", "Invalid id.", 400, ctx.corsHeaders, ctx.requestId);
   const order = await env.DB.prepare(`SELECT * FROM room_service_orders WHERE id = ?`).bind(id).first();
   if (!order) return errorJson("not_found", "Order not found.", 404, ctx.corsHeaders, ctx.requestId);
-  if (guestAccess.stayId && Number(order.stay_id) !== Number(guestAccess.stayId)) {
-    return errorJson("forbidden", "Not your order.", 403, ctx.corsHeaders, ctx.requestId);
-  }
-  if (!guestAccess.stayId && guestAccess.reservationId && Number(order.reservation_id) !== Number(guestAccess.reservationId)) {
+  if (Number(order.stay_id) !== Number(guestAccess.stayId)) {
     return errorJson("forbidden", "Not your order.", 403, ctx.corsHeaders, ctx.requestId);
   }
   const items = await loadOrderItems(env.DB, id);
@@ -283,7 +312,7 @@ export async function listOrders(request, env, ctx) {
     sql += ` AND stay_id = ?`; binds.push(sid);
   }
   if (!status && auth.staff.role === "kitchen") {
-    sql += ` AND status IN ('received','preparing','ready')`;
+    sql += ` AND status IN ('pending','accepted','preparing','ready')`;
   }
   sql += ` ORDER BY created_at ASC, id ASC LIMIT 100`;
   try {
@@ -327,16 +356,39 @@ export async function updateOrderStatus(request, env, ctx) {
     }
   }
   try {
-    const result = await env.DB
-      .prepare(`UPDATE room_service_orders SET status = ?, updated_at = datetime('now') WHERE id = ? AND status = ?`)
-      .bind(next, id, order.status)
-      .run();
+    let result;
+    if (next === "delivered") {
+      result = await env.DB
+        .prepare(
+          `UPDATE room_service_orders SET status = ?, delivered_at = datetime('now'), updated_at = datetime('now')
+           WHERE id = ? AND status = ?`
+        )
+        .bind(next, id, order.status)
+        .run();
+    } else {
+      result = await env.DB
+        .prepare(
+          `UPDATE room_service_orders SET status = ?, updated_at = datetime('now') WHERE id = ? AND status = ?`
+        )
+        .bind(next, id, order.status)
+        .run();
+    }
     if (!result.meta || result.meta.changes !== 1) {
       return errorJson("conflict", "Order status changed concurrently.", 409, ctx.corsHeaders, ctx.requestId);
     }
   } catch (err) {
     console.error("updateOrderStatus:", err);
     return errorJson("schema_error", "Could not update order status.", 500, ctx.corsHeaders, ctx.requestId);
+  }
+  if (typeof bodyResult.data?.kitchen_note === "string") {
+    try {
+      await env.DB
+        .prepare(`UPDATE room_service_orders SET kitchen_note = ? WHERE id = ?`)
+        .bind(bodyResult.data.kitchen_note.trim().slice(0, 500), id)
+        .run();
+    } catch (err) {
+      console.error("kitchen_note update:", err);
+    }
   }
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id,
