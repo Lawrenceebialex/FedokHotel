@@ -7,15 +7,20 @@ const MATRIX = {
     "config:read", "config:write",
     "reservations:read", "reservations:write", "reservations:manage",
     "reception:checkin", "reception:checkout", "reception:allocate",
-    "menu:read", "menu:write"
+    "menu:read", "menu:write",
+    "orders:read", "orders:write", "orders:update_status"
   ]),
   receptionist: new Set([
     "ops:reception", "config:read",
     "reservations:read", "reservations:write",
     "reception:checkin", "reception:checkout", "reception:allocate",
-    "menu:read"
+    "menu:read",
+    "orders:read", "orders:write"
   ]),
-  kitchen: new Set(["ops:kitchen", "menu:read"])
+  kitchen: new Set([
+    "ops:kitchen", "menu:read",
+    "orders:read", "orders:update_status"
+  ])
 };
 
 export function can(role, permission) {
