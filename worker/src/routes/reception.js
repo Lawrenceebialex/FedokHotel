@@ -4,6 +4,7 @@
  * release_reason: checkout | room_move
  * stays.status: reserved | checked_in | checked_out | cancelled
  * Guest token issued after successful check-in (raw returned once).
+ * Phase 8: checkout revokes all guest tokens for the reservation's stays.
  */
 import { requireAuth } from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
@@ -11,7 +12,7 @@ import { json, errorJson } from "../lib/response.js";
 import { extractClientIp } from "../lib/rateLimit.js";
 import { isPositiveInt } from "../lib/configHelpers.js";
 import { insertHistory } from "./reservations.js";
-import { issueGuestToken } from "../lib/guestAccess.js";
+import { issueGuestToken, revokeGuestTokens } from "../lib/guestAccess.js";
 
 function ua(request) {
   return request.headers.get("User-Agent") || null;
@@ -235,6 +236,17 @@ export async function checkOut(request, env, ctx) {
     entityId: reservationId, details: { room_ids: allocations.map((a) => a.room_id) },
     ip: extractClientIp(request), userAgent: ua(request)
   });
+
+  // Phase 8: revoke guest access tokens so they cannot be used after checkout.
+  try {
+    const revoked = await revokeGuestTokens(env.DB, { reservationId });
+    if (!revoked.ok) {
+      console.error("checkOut guest token revoke:", revoked.error, revoked.message);
+    }
+  } catch (err) {
+    console.error("checkOut guest token revoke failed:", err);
+  }
+
   return json({ ok: true, reservation_id: reservationId }, 200, ctx.corsHeaders, ctx.requestId);
 }
 
