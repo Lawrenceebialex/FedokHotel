@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phases 1–6 (includes finance)
+ * Fedok 144 Suites API — Phases 1–7 (includes finance + management reports)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -23,6 +23,7 @@ import * as guestTokens from "./routes/guestTokens.js";
 import * as folio from "./routes/folio.js";
 import * as payments from "./routes/payments.js";
 import * as paystack from "./routes/paystack.js";
+import * as reports from "./routes/reports.js";
 
 const routes = [
   { method: "GET", path: "/health", handler: async (_request, env, ctx) => {
@@ -88,7 +89,13 @@ const routes = [
   { method: "POST", path: "/api/finance/payments/:id/refund", handler: payments.createRefund },
   { method: "POST", path: "/api/finance/paystack/initialize", handler: paystack.initialize },
   { method: "POST", path: "/api/finance/paystack/verify", handler: paystack.verify },
-  { method: "POST", path: "/api/finance/paystack/webhook", handler: paystack.webhook }
+  { method: "POST", path: "/api/finance/paystack/webhook", handler: paystack.webhook },
+  { method: "GET", path: "/api/reports/dashboard", handler: reports.dashboard },
+  { method: "GET", path: "/api/reports/revenue", handler: reports.revenue },
+  { method: "GET", path: "/api/reports/payments", handler: reports.paymentsReport },
+  { method: "GET", path: "/api/reports/occupancy", handler: reports.occupancy },
+  { method: "GET", path: "/api/reports/reservations", handler: reports.reservationsReport },
+  { method: "GET", path: "/api/reports/room-service", handler: reports.roomServiceReport }
 ];
 
 const CSRF_EXEMPT = new Set([
