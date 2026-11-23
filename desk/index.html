@@ -170,6 +170,11 @@
   </form>
 </dialog>
 <div class="toast" id="toast" role="status"></div>
+<script>
+/* Set apiBase to your deployed Worker (see desk/API.md and worker/README.md).
+   CORS only allows https://fedokhotel.pages.dev — open desk from Pages, not file://. */
+window.FEDOK_STAFF_CONFIG = window.FEDOK_STAFF_CONFIG || { apiBase: "" };
+</script>
 <script src="staff.js"></script>
 </body>
 </html>
