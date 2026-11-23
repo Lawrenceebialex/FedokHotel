@@ -1,6 +1,8 @@
 /**
  * Strict CORS — only origins present in the FedokHotel frontend.
  * No wildcards. Credentials enabled for allowed origin.
+ *
+ * Phase 8: allow guest token, CSRF, and idempotency headers required by clients.
  */
 
 export const ALLOWED_ORIGINS = new Set([
@@ -19,14 +21,19 @@ export const ALLOWED_METHODS = new Set([
 export const ALLOWED_REQUEST_HEADERS = new Set([
   "content-type",
   "authorization",
-  "x-request-id"
+  "x-request-id",
+  "x-guest-token",
+  "x-csrf-token",
+  "x-idempotency-key",
+  "idempotency-key"
 ]);
 
 export function corsHeaders(request) {
   const origin = request.headers.get("Origin");
   const headers = {
     "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Request-Id",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, X-Request-Id, X-Guest-Token, X-CSRF-Token, X-Idempotency-Key, Idempotency-Key",
     "Access-Control-Expose-Headers": "X-Request-Id",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin"
