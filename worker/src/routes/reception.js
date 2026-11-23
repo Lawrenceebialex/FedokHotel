@@ -1,8 +1,9 @@
 /**
- * Reception — room_allocations.status CHECK (active | released) only.
- * release_reason records checkout | room_move. previous_allocation_id on new allocation.
- * Main multi-step writes use DB.batch(). Stay insert precedes batch (needs last_row_id).
- * History failure after successful main write returns 500 (not silent success).
+ * Reception — room_allocations.status: active|released
+ * allocation_type: initial | room_move
+ * release_reason: checkout | room_move
+ * stays.status: reserved | checked_in | checked_out | cancelled
+ * Sequential claims (zero-row UPDATE does not fail D1 batch).
  */
 import { requireAuth } from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
@@ -52,6 +53,7 @@ export async function checkIn(request, env, ctx) {
       return errorJson("validation_error", `Room ${room.room_number} is not in the reserved category.`, 400, ctx.corsHeaders, ctx.requestId);
     }
   }
+
   let stayId;
   try {
     const stayResult = await env.DB
@@ -67,44 +69,60 @@ export async function checkIn(request, env, ctx) {
     console.error("checkIn stay insert:", err);
     return errorJson("schema_error", "Cannot check in: stays insert failed.", 500, ctx.corsHeaders, ctx.requestId);
   }
-  const batchStmts = [];
-  for (const roomId of roomIds) {
-    batchStmts.push(
-      env.DB.prepare(
-        `UPDATE rooms SET operational_status = 'occupied'
-         WHERE id = ? AND is_active = 1 AND operational_status = 'available'`
-      ).bind(roomId)
-    );
-    batchStmts.push(
-      env.DB.prepare(
-        `INSERT INTO room_allocations
-          (stay_id, reservation_id, room_id, start_date, end_date, status, allocation_type, released_at, release_reason)
-         VALUES (?, ?, ?, ?, ?, 'active', 'check_in', NULL, NULL)`
-      ).bind(stayId, reservationId, roomId, resv.check_in_date, resv.check_out_date)
-    );
-  }
-  batchStmts.push(
-    env.DB.prepare(`UPDATE reservations SET status = 'checked_in' WHERE id = ? AND status IN ('pending','confirmed')`).bind(reservationId)
-  );
+
+  const claimed = [];
   try {
-    const results = await env.DB.batch(batchStmts);
-    for (let i = 0; i < roomIds.length; i++) {
-      if (!results[i * 2]?.meta || results[i * 2].meta.changes !== 1) {
-        throw new Error(`Room claim failed for room ${roomIds[i]}`);
+    for (const roomId of roomIds) {
+      const claim = await env.DB
+        .prepare(
+          `UPDATE rooms SET operational_status = 'occupied'
+           WHERE id = ? AND is_active = 1 AND operational_status = 'available'`
+        )
+        .bind(roomId)
+        .run();
+      if (!claim.meta || claim.meta.changes !== 1) {
+        throw new Error(`Room claim failed for room ${roomId}`);
       }
+      claimed.push(roomId);
     }
-    if (!results[results.length - 1]?.meta || results[results.length - 1].meta.changes !== 1) {
-      throw new Error("Reservation status update failed");
-    }
+    const batchStmts = claimed.map((roomId) =>
+      env.DB
+        .prepare(
+          `INSERT INTO room_allocations
+            (stay_id, reservation_id, room_id, start_date, end_date, status, allocation_type, released_at, release_reason)
+           VALUES (?, ?, ?, ?, ?, 'active', 'initial', NULL, NULL)`
+        )
+        .bind(stayId, reservationId, roomId, resv.check_in_date, resv.check_out_date)
+    );
+    batchStmts.push(
+      env.DB
+        .prepare(`UPDATE reservations SET status = 'checked_in' WHERE id = ? AND status IN ('pending','confirmed')`)
+        .bind(reservationId)
+    );
+    const results = await env.DB.batch(batchStmts);
+    const resvMeta = results[results.length - 1]?.meta;
+    if (!resvMeta || resvMeta.changes !== 1) throw new Error("Reservation status update failed");
   } catch (err) {
-    console.error("checkIn batch failed:", err);
+    console.error("checkIn claim/batch failed:", err);
+    for (const roomId of claimed) {
+      try {
+        await env.DB
+          .prepare(`UPDATE rooms SET operational_status = 'available' WHERE id = ? AND operational_status = 'occupied'`)
+          .bind(roomId)
+          .run();
+      } catch (_) {}
+    }
     try {
-      await env.DB.prepare(`UPDATE stays SET status = 'cancelled', actual_check_out_at = datetime('now') WHERE id = ?`).bind(stayId).run();
+      await env.DB
+        .prepare(`UPDATE stays SET status = 'cancelled', actual_check_out_at = datetime('now') WHERE id = ?`)
+        .bind(stayId)
+        .run();
     } catch (e2) {
-      console.error("stay cancel after failed batch:", e2);
+      console.error("stay cancel after failed check-in:", e2);
     }
     return errorJson("conflict", "Check-in failed (concurrent room claim or batch error).", 409, ctx.corsHeaders, ctx.requestId);
   }
+
   try {
     await insertHistory(env.DB, reservationId, "checked_in", {
       oldValues: { status: resv.status },
@@ -115,6 +133,7 @@ export async function checkIn(request, env, ctx) {
     console.error("checkIn history required failure:", err);
     return errorJson("history_error", "Check-in completed but history write failed.", 500, ctx.corsHeaders, ctx.requestId);
   }
+
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id, action: "reception.check_in", entityType: "reservation",
     entityId: reservationId, details: { stay_id: stayId, room_ids: roomIds },
@@ -229,12 +248,21 @@ export async function moveRoom(request, env, ctx) {
      ORDER BY id DESC LIMIT 1`
   ).bind(reservationId, fromRoomId).first();
   if (!fromAlloc) return errorJson("not_found", "Active allocation for source room not found.", 404, ctx.corsHeaders, ctx.requestId);
+
+  // Claim target first (must succeed), then batch release+insert
+  const claim = await env.DB
+    .prepare(
+      `UPDATE rooms SET operational_status = 'occupied'
+       WHERE id = ? AND is_active = 1 AND operational_status = 'available'`
+    )
+    .bind(toRoomId)
+    .run();
+  if (!claim.meta || claim.meta.changes !== 1) {
+    return errorJson("conflict", "Target room was claimed concurrently.", 409, ctx.corsHeaders, ctx.requestId);
+  }
+
   try {
     const results = await env.DB.batch([
-      env.DB.prepare(
-        `UPDATE rooms SET operational_status = 'occupied'
-         WHERE id = ? AND is_active = 1 AND operational_status = 'available'`
-      ).bind(toRoomId),
       env.DB.prepare(
         `UPDATE room_allocations SET released_at = datetime('now'), status = 'released', release_reason = 'room_move'
          WHERE id = ? AND status = 'active' AND released_at IS NULL`
@@ -249,12 +277,17 @@ export async function moveRoom(request, env, ctx) {
          VALUES (?, ?, ?, ?, ?, 'active', 'room_move', ?, NULL, NULL)`
       ).bind(stay.id, reservationId, toRoomId, resv.check_in_date, resv.check_out_date, fromAlloc.id)
     ]);
-    if (!results[0]?.meta || results[0].meta.changes !== 1) throw new Error("Target room claim failed");
-    if (!results[1]?.meta || results[1].meta.changes !== 1) throw new Error("Source allocation release failed");
+    if (!results[0]?.meta || results[0].meta.changes !== 1) throw new Error("Source allocation release failed");
   } catch (err) {
     console.error("moveRoom batch failed:", err);
-    return errorJson("conflict", "Room move failed (concurrent claim or batch error).", 409, ctx.corsHeaders, ctx.requestId);
+    try {
+      await env.DB.prepare(
+        `UPDATE rooms SET operational_status = 'available' WHERE id = ? AND operational_status = 'occupied'`
+      ).bind(toRoomId).run();
+    } catch (_) {}
+    return errorJson("conflict", "Room move failed (batch error).", 409, ctx.corsHeaders, ctx.requestId);
   }
+
   try {
     await insertHistory(env.DB, reservationId, "room_moved", {
       oldValues: { room_id: fromRoomId, allocation_id: fromAlloc.id },
@@ -265,6 +298,7 @@ export async function moveRoom(request, env, ctx) {
     console.error("moveRoom history required failure:", err);
     return errorJson("history_error", "Room move completed but history write failed.", 500, ctx.corsHeaders, ctx.requestId);
   }
+
   await writeAudit(env.DB, {
     actorStaffId: auth.staff.id, action: "reception.room_moved", entityType: "reservation",
     entityId: reservationId,
