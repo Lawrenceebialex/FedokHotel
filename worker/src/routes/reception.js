@@ -3,7 +3,7 @@
  * allocation_type: initial | room_move
  * release_reason: checkout | room_move
  * stays.status: reserved | checked_in | checked_out | cancelled
- * Sequential claims (zero-row UPDATE does not fail D1 batch).
+ * Guest token issued after successful check-in (raw returned once).
  */
 import { requireAuth } from "../lib/session.js";
 import { writeAudit } from "../lib/audit.js";
@@ -11,6 +11,7 @@ import { json, errorJson } from "../lib/response.js";
 import { extractClientIp } from "../lib/rateLimit.js";
 import { isPositiveInt } from "../lib/configHelpers.js";
 import { insertHistory } from "./reservations.js";
+import { issueGuestToken } from "../lib/guestAccess.js";
 
 function ua(request) {
   return request.headers.get("User-Agent") || null;
@@ -139,7 +140,29 @@ export async function checkIn(request, env, ctx) {
     entityId: reservationId, details: { stay_id: stayId, room_ids: roomIds },
     ip: extractClientIp(request), userAgent: ua(request)
   });
-  return json({ ok: true, reservation_id: reservationId, stay_id: stayId, room_ids: roomIds }, 200, ctx.corsHeaders, ctx.requestId);
+
+  let guestToken = null;
+  let guestTokenExpires = null;
+  try {
+    const issued = await issueGuestToken(env.DB, stayId);
+    if (issued.ok) {
+      guestToken = issued.rawToken;
+      guestTokenExpires = issued.expiresAt;
+    } else {
+      console.error("guest token issue after check-in:", issued.error, issued.message);
+    }
+  } catch (err) {
+    console.error("guest token issue after check-in failed:", err);
+  }
+
+  return json({
+    ok: true,
+    reservation_id: reservationId,
+    stay_id: stayId,
+    room_ids: roomIds,
+    guest_token: guestToken,
+    guest_token_expires_at: guestTokenExpires
+  }, 200, ctx.corsHeaders, ctx.requestId);
 }
 
 export async function checkOut(request, env, ctx) {
@@ -249,7 +272,6 @@ export async function moveRoom(request, env, ctx) {
   ).bind(reservationId, fromRoomId).first();
   if (!fromAlloc) return errorJson("not_found", "Active allocation for source room not found.", 404, ctx.corsHeaders, ctx.requestId);
 
-  // Claim target first (must succeed), then batch release+insert
   const claim = await env.DB
     .prepare(
       `UPDATE rooms SET operational_status = 'occupied'
