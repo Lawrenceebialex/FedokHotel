@@ -54,10 +54,11 @@
 <div class="wrap">
   <header class="top">
     <button class="menu-btn" id="menuBtn" aria-label="Open navigation" aria-controls="side" aria-expanded="false"><svg class="i"><use href="#i-menu"/></svg></button>
+    <a class="top-brand" href="./">Fedok 144</a>
     <p class="crumb">Front desk / <b>Reception dashboard</b></p>
     <span class="sp"></span>
     <label class="search-mini" for="q"><svg class="i"><use href="#i-search"/></svg>Search reservations<kbd>/</kbd></label>
-    <span class="pill warn" id="conn"><span class="dot"></span><span id="connText">Service not connected</span></span>
+    <button type="button" class="pill" id="conn" data-s="connecting" disabled><span class="dot" aria-hidden="true"></span><span id="connText" role="status">Connecting…</span></button>
     <span class="avatar" title="Not signed in" aria-label="Not signed in">—</span>
   </header>
 
@@ -78,17 +79,18 @@
     </div>
 
     <dl class="stats" data-region data-state="loading" aria-label="Today at a glance">
-      <div class="stat"><dt>Arrivals today</dt><dd data-v>0</dd><small data-s></small></div>
-      <div class="stat"><dt>Departures today</dt><dd data-v>0</dd><small data-s></small></div>
-      <div class="stat"><dt>Guests in house</dt><dd data-v>0</dd><small data-s></small></div>
-      <div class="stat"><dt>Rooms available</dt><dd data-v>0</dd><small data-s></small></div>
-      <div class="stat"><dt>Rooms occupied</dt><dd data-v>0</dd><small data-s></small></div>
-      <div class="stat"><dt>Pending reservations</dt><dd data-v>0</dd><small data-s></small></div>
+      <div class="stat"><dt>Arrivals today</dt><dd data-v>00</dd></div>
+      <div class="stat"><dt>Departures today</dt><dd data-v>00</dd></div>
+      <div class="stat"><dt>Guests in house</dt><dd data-v>00</dd></div>
+      <div class="stat"><dt>Rooms available</dt><dd data-v>00</dd></div>
+      <div class="stat"><dt>Rooms occupied</dt><dd data-v>00</dd></div>
+      <div class="stat"><dt>Pending reservations</dt><dd data-v>00</dd></div>
     </dl>
+    <p class="stats-note" id="statsNote" aria-live="polite">Updating…</p>
 
     <div class="cols">
       <div>
-        <section class="blk" aria-labelledby="h-search">
+        <section class="blk s-search" aria-labelledby="h-search">
           <div class="sec-h"><h2 id="h-search">Find a reservation</h2></div>
           <div class="seg" role="group" aria-label="Search by">
             <button type="button" aria-pressed="true" data-by="guest">Guest name</button>
@@ -104,12 +106,13 @@
             <button class="btn btn-primary" type="submit"><svg class="i"><use href="#i-search"/></svg>Search</button>
           </form>
           <div data-region data-state="empty" id="results" aria-live="polite">
-            <div class="state" data-show="empty"><div class="ring"><svg class="i"><use href="#i-search"/></svg></div><h3>Search to begin</h3><p>Matching reservations will appear here with their status and room.</p></div>
+            <div class="state" data-show="empty"><div class="ring"><svg class="i"><use href="#i-search"/></svg></div><h3 id="resT">Search to begin</h3><p id="resP">Matching reservations will appear here with their status and room.</p></div>
+            <div class="tbl-wrap" data-show="ready"><table><thead><tr><th scope="col">Guest</th><th scope="col">Room</th><th scope="col">Stay</th><th scope="col">Status</th></tr></thead><tbody id="resRows"></tbody></table></div>
             <div class="state err" data-show="error"><div class="ring"><svg class="i"><use href="#i-plug"/></svg></div><h3>Search unavailable</h3><p id="resMsg">The reservation service isn’t connected yet.</p></div>
           </div>
         </section>
 
-        <section class="blk" aria-labelledby="h-mv">
+        <section class="blk s-move" aria-labelledby="h-mv">
           <div class="sec-h"><h2 id="h-mv">Today’s movements</h2><p id="mvNote"></p></div>
           <div class="tabs" role="tablist" aria-label="Movements">
             <button role="tab" id="t-arr" aria-selected="true" data-tab="arrivals">Arrivals</button>
@@ -118,33 +121,39 @@
           </div>
           <div class="tbl-wrap">
             <table>
-              <thead><tr><th scope="col">Guest</th><th scope="col">Room</th><th scope="col">Stay</th><th scope="col"><span class="sr">Action</span></th></tr></thead>
+              <thead><tr><th scope="col">Guest</th><th scope="col">Room</th><th scope="col">Stay</th><th scope="col">Status</th><th scope="col"><span class="sr">Action</span></th></tr></thead>
               <tbody id="rows"></tbody>
             </table>
           </div>
           <div data-region data-state="loading" id="movements" role="tabpanel" aria-labelledby="t-arr" aria-live="polite">
             <div data-show="loading"><div class="skel-row"></div><div class="skel-row" style="width:86%"></div><div class="skel-row" style="width:92%"></div></div>
             <div class="state" data-show="empty"><div class="ring"><svg class="i"><use href="#i-cal"/></svg></div><h3 id="emTitle">No arrivals expected</h3><p>Nothing is scheduled in this list for today.</p></div>
-            <div class="state err" data-show="error"><div class="ring"><svg class="i"><use href="#i-plug"/></svg></div><h3>Can’t load this list</h3><p>The reservation service isn’t connected yet. Nothing has been lost.</p><button class="btn btn-secondary btn-sm" type="button" data-retry>Try again</button></div>
+            <div class="state err" data-show="error"><div class="ring"><svg class="i"><use href="#i-plug"/></svg></div><h3>Can’t load this list</h3><p id="mvErr">The list can’t be loaded right now.</p><button class="btn btn-secondary btn-sm" type="button" data-retry>Try again</button></div>
           </div>
         </section>
       </div>
 
-      <section aria-labelledby="h-rooms">
-        <div class="sec-h"><h2 id="h-rooms">Room status</h2></div>
-        <div class="legend" aria-label="Legend">
-          <span><i style="--c:#3f8a5a"></i>Available</span><span><i style="--c:var(--forest-700)"></i>Occupied</span><span><i style="--c:var(--brass)"></i>Reserved</span><span><i style="--c:#a9a08b"></i>Cleaning</span><span><i style="--c:var(--danger)"></i>Out of service</span>
+      <section class="s-rooms" aria-labelledby="h-rooms">
+        <div class="sec-h"><h2 id="h-rooms">Rooms</h2><p id="roomNote" aria-live="polite"></p></div>
+        <div class="room-tools" id="roomTools" hidden>
+          <div class="chips" role="group" aria-label="Filter rooms by status">
+            <button type="button" class="chip" data-f="all" aria-pressed="true">All <b></b></button>
+            <button type="button" class="chip" data-f="available" aria-pressed="false" style="--c:#3f8a5a"><i></i>Available <b></b></button>
+            <button type="button" class="chip" data-f="occupied" aria-pressed="false" style="--c:var(--forest-700)"><i></i>Occupied <b></b></button>
+            <button type="button" class="chip" data-f="maintenance" aria-pressed="false" style="--c:var(--brass)"><i></i>Maintenance <b></b></button>
+            <button type="button" class="chip" data-f="out" aria-pressed="false" style="--c:var(--danger)"><i></i>Out of service <b></b></button>
+            <button type="button" class="chip" data-f="unknown" aria-pressed="false" style="--c:#a9a08b" hidden><i></i>Not reported <b></b></button>
+          </div>
+          <div class="seg seg-sm" role="group" aria-label="Group rooms by">
+            <button type="button" aria-pressed="true" data-g="category">Category</button>
+            <button type="button" aria-pressed="false" data-g="floor">Floor</button>
+          </div>
         </div>
-        <ul class="types" aria-label="Room types">
-          <li><div><b>Standard Room</b><small>₦35,000 / night</small></div><span class="n" data-t>—</span></li>
-          <li><div><b>Deluxe Room</b><small>₦55,000 / night</small></div><span class="n" data-t>—</span></li>
-          <li><div><b>Executive Suite</b><small>₦85,000 / night</small></div><span class="n" data-t>—</span></li>
-        </ul>
-        <div data-region data-state="loading" id="roomMap" aria-live="polite">
-          <div data-show="loading"><div class="rooms-grid"><div class="skel-row" style="height:40px;margin:0"></div><div class="skel-row" style="height:40px;margin:0"></div><div class="skel-row" style="height:40px;margin:0"></div><div class="skel-row" style="height:40px;margin:0"></div><div class="skel-row" style="height:40px;margin:0"></div><div class="skel-row" style="height:40px;margin:0"></div></div></div>
-          <div class="state" data-show="empty"><div class="ring"><svg class="i"><use href="#i-bed"/></svg></div><h3>No rooms to show</h3><p>Rooms will appear once they are set up in the system.</p></div>
-          <div class="state err" data-show="error"><div class="ring"><svg class="i"><use href="#i-plug"/></svg></div><h3>Room map unavailable</h3><p>Live room status will show here once the service is connected.</p><button class="btn btn-secondary btn-sm" type="button" data-retry>Try again</button></div>
-          <div class="rooms-grid" id="roomGrid" data-show="ready"></div>
+        <div data-region data-state="loading" id="roomMap">
+          <div data-show="loading"><div class="rooms-grid"><div class="skel-row" style="height:56px;margin:0"></div><div class="skel-row" style="height:56px;margin:0"></div><div class="skel-row" style="height:56px;margin:0"></div><div class="skel-row" style="height:56px;margin:0"></div><div class="skel-row" style="height:56px;margin:0"></div><div class="skel-row" style="height:56px;margin:0"></div></div></div>
+          <div class="state" data-show="empty"><div class="ring"><svg class="i"><use href="#i-bed"/></svg></div><h3>No rooms reported</h3><p>The service responded, but returned no rooms. This isn’t the same as a connection problem.</p></div>
+          <div class="state err" data-show="error"><div class="ring"><svg class="i"><use href="#i-plug"/></svg></div><h3 id="roomErrT">Rooms unavailable</h3><p id="roomErrP">Room status can’t be loaded right now.</p><button class="btn btn-secondary btn-sm" type="button" data-retry>Try again</button></div>
+          <div data-show="ready" id="roomGroups"></div>
         </div>
       </section>
     </div>
