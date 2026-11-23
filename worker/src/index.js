@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phases 1–5 (menu + room service)
+ * Fedok 144 Suites API — Phases 1–5 (menu + room service + guest tokens)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -19,6 +19,7 @@ import * as reservations from "./routes/reservations.js";
 import * as reception from "./routes/reception.js";
 import * as menu from "./routes/menu.js";
 import * as roomService from "./routes/roomService.js";
+import * as guestTokens from "./routes/guestTokens.js";
 
 const routes = [
   {
@@ -70,7 +71,9 @@ const routes = [
   { method: "GET", path: "/api/room-service/orders", handler: roomService.listOrders },
   { method: "POST", path: "/api/room-service/orders", handler: roomService.staffCreateOrder },
   { method: "GET", path: "/api/room-service/orders/:id", handler: roomService.staffGetOrder },
-  { method: "PATCH", path: "/api/room-service/orders/:id/status", handler: roomService.updateOrderStatus }
+  { method: "PATCH", path: "/api/room-service/orders/:id/status", handler: roomService.updateOrderStatus },
+  { method: "POST", path: "/api/reception/guest-tokens", handler: guestTokens.issueToken },
+  { method: "POST", path: "/api/reception/guest-tokens/revoke", handler: guestTokens.revokeToken }
 ];
 
 const CSRF_EXEMPT = new Set([
