@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phases 1–5 (menu + room service + guest tokens)
+ * Fedok 144 Suites API — Phases 1–6 (includes finance)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -20,12 +20,12 @@ import * as reception from "./routes/reception.js";
 import * as menu from "./routes/menu.js";
 import * as roomService from "./routes/roomService.js";
 import * as guestTokens from "./routes/guestTokens.js";
+import * as folio from "./routes/folio.js";
+import * as payments from "./routes/payments.js";
+import * as paystack from "./routes/paystack.js";
 
 const routes = [
-  {
-    method: "GET",
-    path: "/health",
-    handler: async (_request, env, ctx) => {
+  { method: "GET", path: "/health", handler: async (_request, env, ctx) => {
       const result = await checkHealth(env);
       const { healthy, ...publicBody } = result;
       return json(publicBody, healthy ? 200 : 503, ctx.corsHeaders, ctx.requestId);
@@ -73,7 +73,22 @@ const routes = [
   { method: "GET", path: "/api/room-service/orders/:id", handler: roomService.staffGetOrder },
   { method: "PATCH", path: "/api/room-service/orders/:id/status", handler: roomService.updateOrderStatus },
   { method: "POST", path: "/api/reception/guest-tokens", handler: guestTokens.issueToken },
-  { method: "POST", path: "/api/reception/guest-tokens/revoke", handler: guestTokens.revokeToken }
+  { method: "POST", path: "/api/reception/guest-tokens/revoke", handler: guestTokens.revokeToken },
+  { method: "GET", path: "/api/finance/folios/by-stay/:stayId", handler: folio.getFolioByStay },
+  { method: "GET", path: "/api/finance/folio-entries/:id", handler: folio.getFolioEntry },
+  { method: "POST", path: "/api/finance/folio-entries", handler: folio.postCharge },
+  { method: "POST", path: "/api/finance/folio-entries/:id/void", handler: folio.voidEntry },
+  { method: "POST", path: "/api/finance/folios/post-room-charge", handler: folio.postRoomCharge },
+  { method: "POST", path: "/api/finance/folios/post-room-service-order", handler: folio.postRoomServiceOrder },
+  { method: "GET", path: "/api/finance/balance", handler: payments.getBalance },
+  { method: "GET", path: "/api/finance/payments", handler: payments.listPayments },
+  { method: "POST", path: "/api/finance/payments", handler: payments.createPayment },
+  { method: "GET", path: "/api/finance/payments/:id", handler: payments.getPayment },
+  { method: "POST", path: "/api/finance/payments/:id/confirm", handler: payments.confirmPayment },
+  { method: "POST", path: "/api/finance/payments/:id/refund", handler: payments.createRefund },
+  { method: "POST", path: "/api/finance/paystack/initialize", handler: paystack.initialize },
+  { method: "POST", path: "/api/finance/paystack/verify", handler: paystack.verify },
+  { method: "POST", path: "/api/finance/paystack/webhook", handler: paystack.webhook }
 ];
 
 const CSRF_EXEMPT = new Set([
@@ -81,7 +96,8 @@ const CSRF_EXEMPT = new Set([
   "/api/public/availability",
   "/api/public/reservations",
   "/api/public/menu",
-  "/api/guest/room-service/orders"
+  "/api/guest/room-service/orders",
+  "/api/finance/paystack/webhook"
 ]);
 
 function isCsrfExempt(pathname) {
@@ -100,26 +116,16 @@ export default {
     if (request.method === "OPTIONS") {
       const preflight = validatePreflight(request);
       if (!preflight.ok) {
-        return errorJson(
-          preflight.error,
-          preflight.message,
-          403,
-          { ...securityHeaders(), "X-Request-Id": requestId, Vary: "Origin" },
-          requestId
-        );
+        return errorJson(preflight.error, preflight.message, 403,
+          { ...securityHeaders(), "X-Request-Id": requestId, Vary: "Origin" }, requestId);
       }
       return new Response(null, { status: 204, headers: baseHeaders });
     }
 
     const origin = request.headers.get("Origin");
     if (origin && !isOriginAllowed(request)) {
-      return errorJson(
-        "cors_forbidden",
-        "Origin is not allowed.",
-        403,
-        { ...securityHeaders(), "X-Request-Id": requestId, Vary: "Origin" },
-        requestId
-      );
+      return errorJson("cors_forbidden", "Origin is not allowed.", 403,
+        { ...securityHeaders(), "X-Request-Id": requestId, Vary: "Origin" }, requestId);
     }
 
     const url = new URL(request.url);
@@ -133,30 +139,14 @@ export default {
       }
     }
 
-    const { route, params, allowedMethods, matchedPath } = matchRoute(
-      routes,
-      request.method,
-      pathname
-    );
+    const { route, params, allowedMethods, matchedPath } = matchRoute(routes, request.method, pathname);
 
     if (matchedPath && !route) {
-      return errorJson(
-        "method_not_allowed",
-        `Method ${request.method} is not allowed for this path.`,
-        405,
-        { ...baseHeaders, Allow: allowedMethods.join(", ") },
-        requestId
-      );
+      return errorJson("method_not_allowed", `Method ${request.method} is not allowed for this path.`, 405,
+        { ...baseHeaders, Allow: allowedMethods.join(", ") }, requestId);
     }
-
     if (!route) {
-      return errorJson(
-        "not_found",
-        "This API route has not been implemented.",
-        404,
-        baseHeaders,
-        requestId
-      );
+      return errorJson("not_found", "This API route has not been implemented.", 404, baseHeaders, requestId);
     }
 
     const ctx = {
@@ -172,13 +162,7 @@ export default {
       return await route.handler(request, env, ctx);
     } catch (err) {
       console.error(`[${requestId}] Unhandled error:`, err);
-      return errorJson(
-        "internal_error",
-        "An unexpected error occurred.",
-        500,
-        baseHeaders,
-        requestId
-      );
+      return errorJson("internal_error", "An unexpected error occurred.", 500, baseHeaders, requestId);
     }
   }
 };
