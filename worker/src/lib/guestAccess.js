@@ -2,6 +2,11 @@
  * Guest access tokens — production:
  * id, stay_id, token_hash, expires_at, revoked_at, last_used_at, created_at
  * Raw token returned only at issuance. SHA-256 hash stored.
+ *
+ * Phase 8 hardening:
+ * - resolveGuestAccess rejects tokens whose stay is not checked_in
+ * - issue revokes prior active tokens for the same stay before insert
+ * - revoke helpers used by checkout and staff revoke endpoints
  */
 import { generateSessionToken, hashToken } from "./crypto.js";
 
@@ -107,6 +112,14 @@ export async function resolveGuestAccess(db, request) {
   if (!stay) {
     return { ok: false, error: "unauthorized", message: "Stay not found for token.", status: 401 };
   }
+  if (stay.status !== "checked_in") {
+    return {
+      ok: false,
+      error: "unauthorized",
+      message: "Guest access is not available after checkout or cancellation.",
+      status: 401
+    };
+  }
   return {
     ok: true,
     tokenId: row.id,
@@ -116,7 +129,7 @@ export async function resolveGuestAccess(db, request) {
   };
 }
 
-export async function revokeGuestTokens(db, { stayId = null, tokenId = null } = {}) {
+export async function revokeGuestTokens(db, { stayId = null, tokenId = null, reservationId = null } = {}) {
   try {
     if (tokenId) {
       await db
@@ -132,7 +145,18 @@ export async function revokeGuestTokens(db, { stayId = null, tokenId = null } = 
         .run();
       return { ok: true };
     }
-    return { ok: false, error: "validation_error", message: "stayId or tokenId required." };
+    if (reservationId) {
+      await db
+        .prepare(
+          `UPDATE guest_access_tokens SET revoked_at = datetime('now')
+           WHERE stay_id IN (SELECT id FROM stays WHERE reservation_id = ?)
+             AND revoked_at IS NULL`
+        )
+        .bind(reservationId)
+        .run();
+      return { ok: true };
+    }
+    return { ok: false, error: "validation_error", message: "stayId, tokenId, or reservationId required." };
   } catch (err) {
     console.error("revokeGuestTokens:", err);
     return { ok: false, error: "schema_error", message: "Could not revoke token(s)." };
