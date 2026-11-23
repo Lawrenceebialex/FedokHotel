@@ -1,5 +1,5 @@
 /**
- * Fedok 144 Suites API — Phases 1–5 (menu foundation)
+ * Fedok 144 Suites API — Phases 1–5 (menu + room service)
  */
 
 import { corsHeaders, isOriginAllowed, validatePreflight } from "./lib/cors.js";
@@ -18,6 +18,7 @@ import * as availability from "./routes/availability.js";
 import * as reservations from "./routes/reservations.js";
 import * as reception from "./routes/reception.js";
 import * as menu from "./routes/menu.js";
+import * as roomService from "./routes/roomService.js";
 
 const routes = [
   {
@@ -63,19 +64,27 @@ const routes = [
   { method: "PATCH", path: "/api/menu/categories/:id", handler: menu.updateCategory },
   { method: "GET", path: "/api/menu/items", handler: menu.listItems },
   { method: "POST", path: "/api/menu/items", handler: menu.createItem },
-  { method: "PATCH", path: "/api/menu/items/:id", handler: menu.updateItem }
+  { method: "PATCH", path: "/api/menu/items/:id", handler: menu.updateItem },
+  { method: "POST", path: "/api/guest/room-service/orders", handler: roomService.guestCreateOrder },
+  { method: "GET", path: "/api/guest/room-service/orders/:id", handler: roomService.guestGetOrder },
+  { method: "GET", path: "/api/room-service/orders", handler: roomService.listOrders },
+  { method: "POST", path: "/api/room-service/orders", handler: roomService.staffCreateOrder },
+  { method: "GET", path: "/api/room-service/orders/:id", handler: roomService.staffGetOrder },
+  { method: "PATCH", path: "/api/room-service/orders/:id/status", handler: roomService.updateOrderStatus }
 ];
 
 const CSRF_EXEMPT = new Set([
   "/api/auth/login",
   "/api/public/availability",
   "/api/public/reservations",
-  "/api/public/menu"
+  "/api/public/menu",
+  "/api/guest/room-service/orders"
 ]);
 
 function isCsrfExempt(pathname) {
   if (CSRF_EXEMPT.has(pathname)) return true;
   if (pathname.startsWith("/api/public/reservations/")) return true;
+  if (pathname.startsWith("/api/guest/room-service/")) return true;
   return false;
 }
 
