@@ -10,7 +10,8 @@ const MATRIX = {
     "menu:read", "menu:write",
     "orders:read", "orders:write", "orders:update_status",
     "finance:read", "finance:charge", "finance:discount", "finance:payment",
-    "finance:refund", "finance:void", "finance:reconcile"
+    "finance:refund", "finance:void", "finance:reconcile",
+    "reports:read"
   ]),
   receptionist: new Set([
     "ops:reception", "config:read",
