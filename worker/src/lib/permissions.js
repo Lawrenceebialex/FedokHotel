@@ -8,14 +8,17 @@ const MATRIX = {
     "reservations:read", "reservations:write", "reservations:manage",
     "reception:checkin", "reception:checkout", "reception:allocate",
     "menu:read", "menu:write",
-    "orders:read", "orders:write", "orders:update_status"
+    "orders:read", "orders:write", "orders:update_status",
+    "finance:read", "finance:charge", "finance:discount", "finance:payment",
+    "finance:refund", "finance:void", "finance:reconcile"
   ]),
   receptionist: new Set([
     "ops:reception", "config:read",
     "reservations:read", "reservations:write",
     "reception:checkin", "reception:checkout", "reception:allocate",
     "menu:read",
-    "orders:read", "orders:write"
+    "orders:read", "orders:write",
+    "finance:read", "finance:charge", "finance:payment"
   ]),
   kitchen: new Set([
     "ops:kitchen", "menu:read",
