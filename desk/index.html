@@ -46,7 +46,7 @@
   </nav>
   <div class="side-foot">
     <a href="../" target="_blank" rel="noopener">View public website <svg class="i" style="width:14px;height:14px"><use href="#i-ext"/></svg></a>
-    <p>Staff sign-in not connected</p>
+    <p>Staff sign-in required</p>
   </div>
 </aside>
 <div class="scrim" id="scrim"></div>
@@ -171,9 +171,9 @@
 </dialog>
 <div class="toast" id="toast" role="status"></div>
 <script>
-/* Set apiBase to your deployed Worker (see desk/API.md and worker/README.md).
-   CORS only allows https://fedokhotel.pages.dev — open desk from Pages, not file://. */
-window.FEDOK_STAFF_CONFIG = window.FEDOK_STAFF_CONFIG || { apiBase: "" };
+window.FEDOK_STAFF_CONFIG = window.FEDOK_STAFF_CONFIG || {
+  apiBase: "https://fedok144-api.lawrenceebialex.workers.dev"
+};
 </script>
 <script src="staff.js"></script>
 </body>
